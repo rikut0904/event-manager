@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine
+FROM golang:1.26-alpine
 
 WORKDIR /app
 
@@ -6,7 +6,7 @@ WORKDIR /app
 COPY go.mod ./
 RUN go mod download
 
-# ソースコード全体をコピー（ここに service-account.json が含まれていればイメージに入ります）
+# ソースコード全体をコピー
 COPY . .
 
 # 開発用ツールの追加

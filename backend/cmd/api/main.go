@@ -5,9 +5,11 @@ import (
 	"log"
 	"os"
 
+	"backend/internal/infrastructure/database"
 	"backend/internal/infrastructure/firebase"
 	"backend/internal/infrastructure/web"
 	"backend/internal/interface/handler"
+	"backend/internal/interface/repository"
 	"backend/internal/usecase"
 
 	"github.com/joho/godotenv"
@@ -22,10 +24,14 @@ func main() {
 
 	// Infrastructure
 	fbClient := firebase.NewClient(ctx)
+	db := database.NewDB()
+
+	// Repositories
+	userRepo := repository.NewUserRepository(db)
 
 	// Usecases
 	healthUsecase := usecase.NewHealthUsecase()
-	authUsecase := usecase.NewAuthUsecase(fbClient)
+	authUsecase := usecase.NewAuthUsecase(fbClient, userRepo)
 
 	// Handlers
 	healthHandler := handler.NewHealthHandler(healthUsecase)

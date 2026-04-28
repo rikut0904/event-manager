@@ -59,7 +59,7 @@ func (h *AuthHandler) LinkConnpass(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	err := h.authUsecase.LinkConnpass(c.Request().Context(), userID, req.ConnpassID)
+	err := h.authUsecase.LinkExternalID(c.Request().Context(), userID, req.ConnpassID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
