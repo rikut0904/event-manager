@@ -1,17 +1,18 @@
-FROM golang:1.26-alpine
+FROM golang:1.24-alpine
 
 WORKDIR /app
 
+# 依存関係のインストール
 COPY go.mod ./
-# COPY go.sum ./
 RUN go mod download
 
+# ソースコード全体をコピー（ここに service-account.json が含まれていればイメージに入ります）
 COPY . .
 
-# Build the application
-RUN go build -o main ./cmd/api/main.go
+# 開発用ツールの追加
+RUN apk add --no-cache git
 
 EXPOSE 8080
 
-# Run the compiled binary
-CMD ["./main"]
+# コンテナ起動時に実行
+CMD ["go", "run", "./cmd/api/main.go"]

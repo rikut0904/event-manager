@@ -1,26 +1,46 @@
 package main
 
 import (
+	"context"
+	"log"
+	"os"
+
+	"backend/internal/infrastructure/firebase"
 	"backend/internal/infrastructure/web"
 	"backend/internal/interface/handler"
 	"backend/internal/usecase"
-	"fmt"
-	"log"
-	"net/http"
-	"os"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found")
+	}
+
+	ctx := context.Background()
+
+	// Infrastructure
+	fbClient := firebase.NewClient(ctx)
+
+	// Usecases
+	healthUsecase := usecase.NewHealthUsecase()
+	authUsecase := usecase.NewAuthUsecase(fbClient)
+
+	// Handlers
+	healthHandler := handler.NewHealthHandler(healthUsecase)
+	authHandler := handler.NewAuthHandler(authUsecase)
+
+	// Router
+	e := web.NewRouter(healthHandler, authHandler, fbClient)
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	// Dependency Injection
-	healthUseCase := usecase.NewHealthUseCase()
-	healthHandler := handler.NewHealthHandler(healthUseCase)
-	mux := web.NewRouter(healthHandler)
-
-	fmt.Printf("Server is running on port %s\n", port)
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+	log.Printf("Server starting on port %s", port)
+	if err := e.Start(":" + port); err != nil {
+		log.Fatalf("could not start server: %v", err)
+	}
 }

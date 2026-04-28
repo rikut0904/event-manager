@@ -6,7 +6,7 @@ import (
 )
 
 func TestHealthInteractor_Execute(t *testing.T) {
-	uc := NewHealthUseCase()
+	uc := NewHealthUsecase()
 	result := uc.Execute()
 
 	if result.Status != "OK" {

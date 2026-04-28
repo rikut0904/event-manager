@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-type HealthUseCase interface {
+type HealthUsecase interface {
 	Execute() domain.HealthStatus
 }
 
 type healthInteractor struct{}
 
-func NewHealthUseCase() HealthUseCase {
+func NewHealthUsecase() HealthUsecase {
 	return &healthInteractor{}
 }
 

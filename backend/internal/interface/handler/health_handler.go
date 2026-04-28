@@ -1,22 +1,20 @@
 package handler
 
 import (
-	"backend/internal/usecase"
-	"encoding/json"
 	"net/http"
+	"backend/internal/usecase"
+	"github.com/labstack/echo/v4"
 )
 
 type HealthHandler struct {
-	useCase usecase.HealthUseCase
+	useCase usecase.HealthUsecase
 }
 
-func NewHealthHandler(uc usecase.HealthUseCase) *HealthHandler {
+func NewHealthHandler(uc usecase.HealthUsecase) *HealthHandler {
 	return &HealthHandler{useCase: uc}
 }
 
-func (h *HealthHandler) Handle(w http.ResponseWriter, r *http.Request) {
+func (h *HealthHandler) HealthCheck(c echo.Context) error {
 	status := h.useCase.Execute()
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(status)
+	return c.JSON(http.StatusOK, status)
 }
