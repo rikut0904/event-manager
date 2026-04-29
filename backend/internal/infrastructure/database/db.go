@@ -27,7 +27,7 @@ func NewDB() *gorm.DB {
 
 	// 自動マイグレーション（テーブル作成・更新）
 	log.Println("Starting database migration...")
-	if err := db.AutoMigrate(&domain.User{}); err != nil {
+	if err := db.AutoMigrate(&domain.User{}, &domain.Event{}); err != nil {
 		log.Fatalf("error during migration: %v", err)
 	}
 	log.Println("Database migration completed.")

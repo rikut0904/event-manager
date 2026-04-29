@@ -48,21 +48,3 @@ func (h *AuthHandler) SignUp(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, user)
 }
-
-func (h *AuthHandler) LinkConnpass(c echo.Context) error {
-	userID := c.Get("userID").(string)
-
-	var req struct {
-		ConnpassID string `json:"connpass_id"`
-	}
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	err := h.authUsecase.LinkExternalID(c.Request().Context(), userID, req.ConnpassID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.NoContent(http.StatusNoContent)
-}

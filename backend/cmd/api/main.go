@@ -28,17 +28,20 @@ func main() {
 
 	// Repositories
 	userRepo := repository.NewUserRepository(db)
+	eventRepo := repository.NewEventRepository(db)
 
 	// Usecases
 	healthUsecase := usecase.NewHealthUsecase()
 	authUsecase := usecase.NewAuthUsecase(fbClient, userRepo)
+	eventUsecase := usecase.NewEventUsecase(eventRepo)
 
 	// Handlers
 	healthHandler := handler.NewHealthHandler(healthUsecase)
 	authHandler := handler.NewAuthHandler(authUsecase)
+	eventHandler := handler.NewEventHandler(eventUsecase)
 
 	// Router
-	e := web.NewRouter(healthHandler, authHandler, fbClient)
+	e := web.NewRouter(healthHandler, authHandler, eventHandler, fbClient)
 
 	port := os.Getenv("PORT")
 	if port == "" {

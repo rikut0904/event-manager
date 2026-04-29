@@ -12,6 +12,7 @@ export default function Navigation() {
 
   const navItems = user ? [
     { name: 'ダッシュボード', href: '/dashboard' },
+    { name: 'イベント管理', href: '/dashboard/events' },
   ] : [
     { name: 'ホーム', href: '/' },
     { name: 'ログイン', href: '/login' },

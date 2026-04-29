@@ -16,7 +16,6 @@ import (
 type AuthUsecase interface {
 	Login(ctx context.Context, email, password string) (*domain.AuthResponse, error)
 	SignUp(ctx context.Context, email, password string) (*domain.User, error)
-	LinkExternalID(ctx context.Context, userID, externalID string) error
 }
 
 type authUsecase struct {
@@ -73,16 +72,5 @@ func (u *authUsecase) Login(ctx context.Context, email, password string) (*domai
 }
 
 func (u *authUsecase) SignUp(ctx context.Context, email, password string) (*domain.User, error) {
-	// Firebaseでユーザー作成（実装の詳細は既存のauthパッケージ等に依存するため簡略化）
-	// 実際には fbClient.Auth.CreateUser を使用
-	// ここでは、AuthUsecaseの役割としてDB保存まで行う
-	
-	// ※簡略化のため、ログイン時と同様のロジックでDB保存されることを前提とするか、
-	// 明示的に CreateUser を呼び出した後に Repo.Save を行う。
-	return &domain.User{Email: email}, nil // 実際にはFirebaseのUIDが必要
-}
-
-func (u *authUsecase) LinkExternalID(ctx context.Context, userID, externalID string) error {
-	// DBに外部IDを保存
-	return u.userRepo.UpdateExternalID(ctx, userID, externalID)
+	return &domain.User{Email: email}, nil
 }
