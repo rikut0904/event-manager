@@ -13,7 +13,9 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user) router.push('/dashboard');
+    if (user) {
+      router.replace('/dashboard');
+    }
   }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -25,7 +25,7 @@ func (r *userRepository) Save(ctx context.Context, user *domain.User) error {
 	// Upsert (存在すれば更新、なければ挿入)
 	return r.db.WithContext(ctx).Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"email", "updated_at"}),
+		DoUpdates: clause.AssignmentColumns([]string{"email", "name", "username", "avatar_url", "bio", "updated_at"}),
 	}).Create(user).Error
 }
 

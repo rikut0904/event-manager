@@ -6,6 +6,10 @@ import { apiRequest } from '@/lib/api';
 interface User {
   id: string;
   email: string;
+  name?: string;
+  username?: string;
+  avatar_url?: string;
+  bio?: string;
   connpass_id?: string;
 }
 
@@ -26,9 +30,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const savedUser = localStorage.getItem('auth_user');
-    if (savedUser) {
+    const token = localStorage.getItem('auth_token');
+    
+    if (savedUser && token) {
       setUser(JSON.parse(savedUser));
     }
+    // ユーザーセットの直後にloadingを解除
     setLoading(false);
   }, []);
 
@@ -55,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
     setUser(null);
+    window.location.href = '/'; // 確実に状態をリセットしてトップへ
   };
 
   const linkConnpass = async (connpassID: string) => {

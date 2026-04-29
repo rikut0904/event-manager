@@ -5,16 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  if (loading) return null;
   if (!user) return null;
 
   return (
