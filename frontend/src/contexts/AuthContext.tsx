@@ -29,14 +29,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('auth_user');
-    const token = localStorage.getItem('auth_token');
-    
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+    try {
+      const savedUser = localStorage.getItem('auth_user');
+      const token = localStorage.getItem('auth_token');
+      
+      if (savedUser && token) {
+        setUser(JSON.parse(savedUser));
+      }
+    } catch (err) {
+      console.error('Failed to initialize auth from localStorage:', err);
+      // 状態が不整合な場合はクリーンアップ
+      localStorage.removeItem('auth_user');
+      localStorage.removeItem('auth_token');
+    } finally {
+      // エラーが発生しても必ずloadingを解除する
+      setLoading(false);
     }
-    // ユーザーセットの直後にloadingを解除
-    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
