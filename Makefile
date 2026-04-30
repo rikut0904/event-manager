@@ -37,4 +37,3 @@ backend-lint:
 
 backend-test:
 	cd backend && go test ./...
-

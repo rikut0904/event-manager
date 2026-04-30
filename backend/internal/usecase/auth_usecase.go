@@ -11,6 +11,7 @@ import (
 	"backend/internal/domain"
 	"backend/internal/infrastructure/firebase"
 	"backend/internal/interface/repository"
+	firebaseauth "firebase.google.com/go/v4/auth"
 )
 
 type AuthUsecase interface {
@@ -72,5 +73,22 @@ func (u *authUsecase) Login(ctx context.Context, email, password string) (*domai
 }
 
 func (u *authUsecase) SignUp(ctx context.Context, email, password string) (*domain.User, error) {
-	return &domain.User{Email: email}, nil
+	params := (&firebaseauth.UserToCreate{}).
+		Email(email).
+		Password(password)
+
+	firebaseUser, err := u.fbClient.Auth.CreateUser(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &domain.User{
+		ID:    firebaseUser.UID,
+		Email: firebaseUser.Email,
+	}
+	if err := u.userRepo.Save(ctx, user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

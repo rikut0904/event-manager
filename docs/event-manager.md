@@ -52,7 +52,7 @@
 
 | カテゴリ | 予約語 |
 | :--- | :--- |
-| システム基本 | admin, login, logout, register, signup, auth, api, settings, config, dashboard |
+| システム基本 | admin, login, logout, register, signup, auth, api, settings, config, home |
 | 機能・リソース | events, communities, users, groups, notifications, messages, search, static, media |
 | ファイル・メタデータ | favicon.ico, robots.txt, sitemap.xml, manifest.json, .well-known |
 
@@ -63,11 +63,19 @@
 ### 6.1 認証・ユーザー管理
 | Method | Endpoint | Description | 備考 |
 | :--- | :--- | :--- | :--- |
-| POST | `/api/v1/auth/verify` | トークン検証・サインアップ | 初回ログイン時のユーザー作成 |
+| POST | `/auth/signup` | メール/パスワードでアカウント作成 | Firebase Authentication にユーザーを作成し、アプリDBにも保存 |
+| POST | `/auth/login` | メール/パスワードでログイン | Firebase Identity Toolkit で ID Token を取得 |
 | GET | `/api/v1/users/me` | ログインユーザー情報取得 | 自分の基本プロフィール |
 | PATCH | `/api/v1/users/me` | プロフィール/Display ID更新 | ID重複・予約語チェック実施 |
 | GET | `/api/v1/users/me/history` | 自分のイベント参加履歴取得 | 過去のイベント資料へのリンク含む |
 | GET | `/[display_id]` | 公開プロフィール取得 | 【公開】 名刺交換用ページ |
+
+#### ログイン実装メモ
+- フロントエンドは `/login` と `/signup` を表示し、`frontend/src/contexts/AuthContext.tsx` 経由で API を呼び出す。
+- API のベース URL は `NEXT_PUBLIC_API_BASE_URL` で指定する。Docker Compose 開発環境では `http://localhost:8080`。
+- サインアップ時は `POST /auth/signup` のあとに `POST /auth/login` を実行し、取得した `token` と `user` を `localStorage` の `auth_token` / `auth_user` に保存する。
+- 認証が必要な API には `Authorization: Bearer <auth_token>` を付与する。バックエンドの `AuthMiddleware` が Firebase ID Token を検証し、Echo context に `userID` をセットする。
+- バックエンドには `FIREBASE_PROJECT_ID`、`FIREBASE_API_KEY`、`FIREBASE_SERVICE_ACCOUNT_JSON` または `FIREBASE_SERVICE_ACCOUNT_KEY` が必要。
 
 ### 6.2 コミュニティ管理
 | Method | Endpoint | Description | 備考 |

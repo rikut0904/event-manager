@@ -1,4 +1,10 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+if (!API_BASE_URL && typeof window !== 'undefined') {
+  console.warn('WARNING: NEXT_PUBLIC_API_BASE_URL is not defined. Defaulting to http://localhost:8080');
+}
+
+const BASE_URL = API_BASE_URL || 'http://localhost:8080';
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
@@ -9,7 +15,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
     ...options.headers,
   };
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
     headers,
   });

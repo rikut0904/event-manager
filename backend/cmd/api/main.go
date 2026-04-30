@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"backend/internal/infrastructure/database"
 	"backend/internal/infrastructure/firebase"
@@ -39,6 +40,16 @@ func main() {
 	healthHandler := handler.NewHealthHandler(healthUsecase)
 	authHandler := handler.NewAuthHandler(authUsecase)
 	eventHandler := handler.NewEventHandler(eventUsecase)
+
+	// Background Tasks: 終了時刻を過ぎたイベントを自動で finished に更新
+	go func() {
+		ticker := time.NewTicker(1 * time.Minute)
+		for range ticker.C {
+			if err := eventUsecase.UpdateExpiredEvents(ctx); err != nil {
+				log.Printf("error updating expired events: %v", err)
+			}
+		}
+	}()
 
 	// Router
 	e := web.NewRouter(healthHandler, authHandler, eventHandler, fbClient)
