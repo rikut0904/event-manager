@@ -11,8 +11,8 @@ export default function Navigation() {
   const pathname = usePathname();
 
   const navItems = user ? [
-    { name: 'ダッシュボード', href: '/dashboard' },
-    { name: 'イベント管理', href: '/dashboard/events' },
+    { name: 'ホーム', href: '/home' },
+    { name: 'イベント管理', href: '/events' },
   ] : [
     { name: 'ホーム', href: '/' },
     { name: 'ログイン', href: '/login' },
@@ -25,11 +25,10 @@ export default function Navigation() {
       <Link
         href={item.href}
         onClick={onClick}
-        className={`block px-4 py-2.5 text-sm font-medium transition-colors rounded-lg ${
-          isActive 
-            ? 'bg-blue-50 text-blue-600' 
+        className={`block px-4 py-2.5 text-sm font-medium transition-colors rounded-lg ${isActive
+            ? 'bg-blue-50 text-blue-600'
             : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-        }`}
+          }`}
       >
         {item.name}
       </Link>
@@ -81,7 +80,7 @@ export default function Navigation() {
             Event Manager
           </Link>
         </div>
-        
+
         <nav className="flex-1 px-4 space-y-1.5">
           <div className="text-xs font-bold text-gray-400 mb-4 px-4 uppercase tracking-[0.2em]">Menu</div>
           {navItems.map((item) => (

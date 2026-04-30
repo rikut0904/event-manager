@@ -14,7 +14,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (user) {
-      router.replace('/dashboard');
+      router.replace('/home');
     }
   }, [user, router]);
 
@@ -23,7 +23,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       await login(email, password);
-      router.push('/dashboard');
+      router.push('/home');
     } catch (err: any) {
       alert(err.message);
     } finally {
