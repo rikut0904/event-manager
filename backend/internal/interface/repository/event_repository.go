@@ -76,8 +76,8 @@ func (r *eventRepository) FindAllPublished(ctx context.Context) ([]domain.Event,
 }
 
 func (r *eventRepository) UpdateExpiredStatus(ctx context.Context) error {
-	// 終了時刻を過ぎていて、かつステータスが published のものを finished に更新
+	// 終了時刻が設定され、終了時刻を過ぎていて、かつステータスが published のものを finished に更新
 	return r.db.WithContext(ctx).Model(&domain.Event{}).
-		Where("status = ? AND end_time < ?", "published", time.Now()).
+		Where("status = ? AND end_time IS NOT NULL AND end_time > ? AND end_time < ?", "published", time.Time{}, time.Now()).
 		Update("status", "finished").Error
 }
