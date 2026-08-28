@@ -13,7 +13,7 @@ type Event struct {
 	EndTime      time.Time `json:"end_time" gorm:"column:end_time"`
 	Location     string    `json:"location" gorm:"column:location"`
 	DisplayID    string    `json:"display_id" gorm:"unique;not null;index;column:display_id"`
-	Status       string    `json:"status" gorm:"not null;default:draft;column:status"` // "draft", "published"
+	Status       string    `json:"status" gorm:"not null;default:draft;column:status"` // "draft", "published", "finished"
 	IsOnline     bool      `json:"is_online" gorm:"not null;default:false;column:is_online"`
 	Capacity     int       `json:"capacity" gorm:"not null;default:0;column:capacity"`
 	SourceURL    string    `json:"source_url" gorm:"column:source_url"`
