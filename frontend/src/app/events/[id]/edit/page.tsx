@@ -85,7 +85,7 @@ export default function EditEventPage() {
     setEndTime(end.toTimeString().slice(0, 5));
   }, [startDate, startTime, isEndTimeManual, isFetching]);
 
-  const handleUpdateEvent = async (e: React.FormEvent, finalStatus: string) => {
+  const handleUpdateEvent = async (e: React.SyntheticEvent, finalStatus: string) => {
     e.preventDefault();
     setError('');
 

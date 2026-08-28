@@ -42,7 +42,7 @@ export default function NewEventPage() {
     } catch (e) {}
   }, [startDate, startTime, isEndTimeManual]);
 
-  const handleCreateEvent = async (e: React.FormEvent, status: string) => {
+  const handleCreateEvent = async (e: React.SyntheticEvent, status: string) => {
     e.preventDefault();
     setError('');
 
