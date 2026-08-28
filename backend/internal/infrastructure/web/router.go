@@ -38,6 +38,7 @@ func NewRouter(
 	e.GET("/health", healthHandler.HealthCheck)
 	e.POST("/auth/signup", authHandler.SignUp)
 	e.POST("/auth/login", authHandler.Login)
+	e.POST("/auth/link-connpass", authHandler.LinkConnpass, AuthMiddleware(fbClient))
 
 	// 公開閲覧用
 	e.GET("/api/v1/events/published", eventHandler.GetPublished)

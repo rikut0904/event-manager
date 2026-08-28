@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"backend/internal/domain"
 	"backend/internal/infrastructure/firebase"
@@ -18,6 +19,7 @@ import (
 type AuthUsecase interface {
 	Login(ctx context.Context, email, password string) (*domain.AuthResponse, error)
 	SignUp(ctx context.Context, email, password string) (*domain.User, error)
+	LinkConnpass(ctx context.Context, userID, connpassID string) error
 }
 
 type authUsecase struct {
@@ -96,4 +98,13 @@ func (u *authUsecase) SignUp(ctx context.Context, email, password string) (*doma
 	}
 
 	return user, nil
+}
+
+func (u *authUsecase) LinkConnpass(ctx context.Context, userID, connpassID string) error {
+	connpassID = strings.TrimSpace(connpassID)
+	if connpassID == "" {
+		return errors.New("connpass IDは必須です")
+	}
+
+	return u.userRepo.UpdateConnpassID(ctx, userID, connpassID)
 }
