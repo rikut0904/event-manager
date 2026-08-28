@@ -34,7 +34,7 @@ func (u *eventUsecase) validateEvent(title string, startTime, endTime time.Time)
 	if strings.TrimSpace(title) == "" {
 		return errors.New("イベント名は必須です")
 	}
-	if !endTime.IsZero() && endTime.Before(startTime) {
+	if !endTime.IsZero() && !endTime.After(startTime) {
 		return errors.New("終了時間は開始時間より後である必要があります")
 	}
 	return nil
