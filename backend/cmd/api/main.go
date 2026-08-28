@@ -42,14 +42,20 @@ func main() {
 	eventHandler := handler.NewEventHandler(eventUsecase)
 
 	// Background Tasks: 終了時刻を過ぎたイベントを自動で finished に更新
-	go func() {
-		ticker := time.NewTicker(1 * time.Minute)
-		for range ticker.C {
-			if err := eventUsecase.UpdateExpiredEvents(ctx); err != nil {
-				log.Printf("error updating expired events: %v", err)
+	if db != nil {
+		go func() {
+			ticker := time.NewTicker(1 * time.Minute)
+			defer ticker.Stop()
+
+			for range ticker.C {
+				if err := eventUsecase.UpdateExpiredEvents(ctx); err != nil {
+					log.Printf("error updating expired events: %v", err)
+				}
 			}
-		}
-	}()
+		}()
+	} else {
+		log.Println("Skipping expired event background task because database is unavailable")
+	}
 
 	// Router
 	e := web.NewRouter(healthHandler, authHandler, eventHandler, fbClient)
