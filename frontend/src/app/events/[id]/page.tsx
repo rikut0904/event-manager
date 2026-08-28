@@ -38,6 +38,17 @@ export default function EventViewPage() {
   );
 
   const isOwner = user && user.id === event.creator_id;
+  const toSafeHTTPURL = (value?: string) => {
+    if (!value) return null;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null;
+    } catch {
+      return null;
+    }
+  };
+  const safeLocationURL = event.is_online ? toSafeHTTPURL(event.location) : null;
+  const safeSourceURL = toSafeHTTPURL(event.source_url);
   const googleMapsUrl = event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : null;
   const mapEmbedUrl = !event.is_online && event.location ? `https://maps.google.com/maps?q=${encodeURIComponent(event.location)}&output=embed` : null;
 
@@ -132,7 +143,7 @@ export default function EventViewPage() {
                 <p className="text-gray-600 text-sm mb-6">このイベントはオンラインで開催されます。配信先や参加URLは以下の通りです。</p>
                 <div className="bg-white p-4 rounded-2xl border border-green-100 flex items-center justify-between">
                   <span className="text-xs font-mono text-gray-500 truncate mr-4">{event.location}</span>
-                  <a href={event.location.startsWith('http') ? event.location : '#'} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-green-700 transition-colors shrink-0">
+                  <a href={safeLocationURL || '#'} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-xl hover:bg-green-700 transition-colors shrink-0" aria-disabled={!safeLocationURL} onClick={(e) => { if (!safeLocationURL) e.preventDefault(); }}>
                     URLを開く
                   </a>
                 </div>
@@ -167,9 +178,9 @@ export default function EventViewPage() {
           </div>
           
           <div className="flex-1 md:flex-none">
-            {event.source_url ? (
+            {safeSourceURL ? (
               <a 
-                href={event.source_url} 
+                href={safeSourceURL}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="block w-full md:w-64 py-4 bg-gray-900 text-white text-center font-black rounded-2xl text-sm tracking-widest hover:bg-black transition-all shadow-xl shadow-gray-200 active:scale-95"

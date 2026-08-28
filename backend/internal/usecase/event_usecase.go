@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 
@@ -40,6 +41,19 @@ func (u *eventUsecase) validateEvent(title string, startTime, endTime time.Time)
 	return nil
 }
 
+func validateHTTPURL(value, fieldName string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+
+	parsed, err := url.ParseRequestURI(value)
+	if err != nil || parsed.Host == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return errors.New(fieldName + "はhttpまたはhttpsのURLで指定してください")
+	}
+	return nil
+}
+
 func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, status string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error) {
 	shortID := strings.ReplaceAll(uuid.New().String(), "-", "")[:12]
 	parsedStart, err := time.Parse(time.RFC3339, startTime)
@@ -66,6 +80,9 @@ func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title,
 	}
 	if status != "draft" && status != "published" {
 		return nil, errors.New("ステータスが不正です")
+	}
+	if err := validateHTTPURL(sourceURL, "外部リンク"); err != nil {
+		return nil, err
 	}
 	event := &domain.Event{
 		CreatorID: creatorID, Title: title, Description: description,
@@ -119,6 +136,11 @@ func (u *eventUsecase) UpdateEvent(ctx context.Context, creatorID string, eventI
 	}
 	if thumbnailURL != nil {
 		event.ThumbnailURL = *thumbnailURL
+	}
+	if sourceURL != nil {
+		if err := validateHTTPURL(*sourceURL, "外部リンク"); err != nil {
+			return nil, err
+		}
 	}
 
 	if status != "" {
