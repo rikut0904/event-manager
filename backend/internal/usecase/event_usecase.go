@@ -42,10 +42,16 @@ func (u *eventUsecase) validateEvent(title string, startTime, endTime time.Time)
 
 func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, status string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error) {
 	shortID := strings.ReplaceAll(uuid.New().String(), "-", "")[:12]
-	parsedStart, _ := time.Parse(time.RFC3339, startTime)
+	parsedStart, err := time.Parse(time.RFC3339, startTime)
+	if err != nil {
+		return nil, errors.New("開始日時の形式が正しくありません")
+	}
 	var parsedEnd time.Time
-	if endTime != "" {
-		parsedEnd, _ = time.Parse(time.RFC3339, endTime)
+	if endTime != "" && endTime != "null" {
+		parsedEnd, err = time.Parse(time.RFC3339, endTime)
+		if err != nil {
+			return nil, errors.New("終了日時の形式が正しくありません")
+		}
 	}
 
 	if parsedStart.Before(time.Now()) {
@@ -67,7 +73,7 @@ func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title,
 		DisplayID: shortID, Status: status,
 		IsOnline: isOnline, Capacity: capacity, SourceURL: sourceURL, ThumbnailURL: thumbnailURL,
 	}
-	err := u.eventRepo.Create(ctx, event)
+	err = u.eventRepo.Create(ctx, event)
 	return event, err
 }
 
@@ -80,10 +86,16 @@ func (u *eventUsecase) UpdateEvent(ctx context.Context, creatorID string, eventI
 		return nil, errors.New("unauthorized")
 	}
 
-	parsedStart, _ := time.Parse(time.RFC3339, startTime)
+	parsedStart, parseErr := time.Parse(time.RFC3339, startTime)
+	if parseErr != nil {
+		return nil, errors.New("開始日時の形式が正しくありません")
+	}
 	var parsedEnd time.Time
 	if endTime != "" && endTime != "null" {
-		parsedEnd, _ = time.Parse(time.RFC3339, endTime)
+		parsedEnd, parseErr = time.Parse(time.RFC3339, endTime)
+		if parseErr != nil {
+			return nil, errors.New("終了日時の形式が正しくありません")
+		}
 	}
 
 	if err := u.validateEvent(title, parsedStart, parsedEnd); err != nil {
