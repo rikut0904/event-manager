@@ -12,8 +12,8 @@ import (
 )
 
 type EventUsecase interface {
-	CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string) (*domain.Event, error)
-	UpdateEvent(ctx context.Context, creatorID string, eventID string, title, description string, startTime string, endTime string, location string, status string) (*domain.Event, error)
+	CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error)
+	UpdateEvent(ctx context.Context, creatorID string, eventID string, title, description string, startTime string, endTime string, location string, status string, isOnline *bool, capacity *int, sourceURL *string, thumbnailURL *string) (*domain.Event, error)
 	DeleteEvent(ctx context.Context, creatorID string, eventID string) error
 	GetMyEvents(ctx context.Context, creatorID string) ([]domain.Event, error)
 	GetEventByID(ctx context.Context, requesterID string, eventID string) (*domain.Event, error)
@@ -40,7 +40,7 @@ func (u *eventUsecase) validateEvent(title string, startTime, endTime time.Time)
 	return nil
 }
 
-func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string) (*domain.Event, error) {
+func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error) {
 	shortID := strings.ReplaceAll(uuid.New().String(), "-", "")[:12]
 	parsedStart, _ := time.Parse(time.RFC3339, startTime)
 	var parsedEnd time.Time
@@ -59,12 +59,13 @@ func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title,
 		CreatorID: creatorID, Title: title, Description: description,
 		StartTime: parsedStart, EndTime: parsedEnd, Location: location,
 		DisplayID: shortID, Status: "draft",
+		IsOnline: isOnline, Capacity: capacity, SourceURL: sourceURL, ThumbnailURL: thumbnailURL,
 	}
 	err := u.eventRepo.Create(ctx, event)
 	return event, err
 }
 
-func (u *eventUsecase) UpdateEvent(ctx context.Context, creatorID string, eventID string, title, description string, startTime string, endTime string, location string, status string) (*domain.Event, error) {
+func (u *eventUsecase) UpdateEvent(ctx context.Context, creatorID string, eventID string, title, description string, startTime string, endTime string, location string, status string, isOnline *bool, capacity *int, sourceURL *string, thumbnailURL *string) (*domain.Event, error) {
 	event, err := u.eventRepo.FindByID(ctx, eventID)
 	if err != nil {
 		return nil, errors.New("event not found")
@@ -88,6 +89,19 @@ func (u *eventUsecase) UpdateEvent(ctx context.Context, creatorID string, eventI
 	event.StartTime = parsedStart
 	event.EndTime = parsedEnd
 	event.Location = location
+
+	if isOnline != nil {
+		event.IsOnline = *isOnline
+	}
+	if capacity != nil {
+		event.Capacity = *capacity
+	}
+	if sourceURL != nil {
+		event.SourceURL = *sourceURL
+	}
+	if thumbnailURL != nil {
+		event.ThumbnailURL = *thumbnailURL
+	}
 
 	if status != "" {
 		if event.Status == "published" && status == "draft" {

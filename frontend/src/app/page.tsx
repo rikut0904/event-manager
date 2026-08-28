@@ -10,7 +10,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       <header className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <span className="font-bold text-gray-900 tracking-tight">Event Manager</span>
+        <span className="font-bold text-gray-900 tracking-tight">イベント管理</span>
         <div className="flex gap-4 items-center">
           <Link href={user ? homeLink : "/login"} className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
             {user ? 'ホーム' : 'ログイン'}
@@ -50,4 +50,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

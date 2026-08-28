@@ -9,6 +9,11 @@ export default function NewEventPage() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [isOnline, setIsOnline] = useState(false);
+  const [capacity, setCapacity] = useState(0);
+  const [sourceURL, setSourceURL] = useState('');
+  const [thumbnailURL, setThumbnailURL] = useState('');
+  
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -63,16 +68,20 @@ export default function NewEventPage() {
 
     setIsLoading(true);
     try {
-      await apiRequest('/api/v1/events', {
+      const data = await apiRequest('/api/v1/events', {
         method: 'POST',
         body: JSON.stringify({
           title, description, location,
           status,
+          is_online: isOnline,
+          capacity: Number(capacity),
+          source_url: sourceURL,
+          thumbnail_url: thumbnailURL,
           start_time: start.toISOString(),
           end_time: end ? end.toISOString() : null,
         }),
       });
-      router.push('/events');
+      router.push(`/events/${data.id}/edit`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -80,86 +89,187 @@ export default function NewEventPage() {
     }
   };
 
-  const googleMapsUrl = location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}` : null;
-
   return (
-    <div className="min-h-screen bg-gray-50/30 text-gray-600 font-sans p-8 lg:p-16">
-      <main className="max-w-3xl mx-auto">
-        <header className="mb-12">
-          <Link href="/events" className="text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-blue-600 transition-colors mb-4 block">← Back to List</Link>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight uppercase tracking-widest">New Event</h1>
-        </header>
+    <div className="min-h-screen bg-gray-50/30 text-gray-900 font-sans pb-32">
+      {/* Fixed Top Actions */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 px-8 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/events" className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+          </Link>
+          <h1 className="text-sm font-black tracking-[0.2em] text-gray-500">イベントを作成</h1>
+        </div>
+        <div className="flex gap-3">
+          <button
+            onClick={(e) => handleCreateEvent(e, 'draft')}
+            disabled={isLoading}
+            className="px-6 py-2.5 bg-white text-gray-600 text-sm font-black tracking-widest rounded-full border border-gray-200 hover:bg-gray-50 transition-all disabled:opacity-50"
+          >
+            下書き保存
+          </button>
+          <button
+            onClick={(e) => handleCreateEvent(e, 'published')}
+            disabled={isLoading}
+            className="px-8 py-2.5 bg-blue-600 text-white text-sm font-black tracking-widest rounded-full hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
+          >
+              今すぐ公開
+          </button>
+        </div>
+      </div>
 
+      <main className="max-w-[1400px] mx-auto px-8 pt-12">
         {error && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl flex items-center gap-3">
+          <div className="mb-12 p-4 bg-red-50 border border-red-100 text-red-600 text-sm font-bold tracking-widest rounded-xl flex items-center gap-3">
             <span>⚠️</span>
             <span>{error}</span>
           </div>
         )}
 
-        <div className="bg-white p-10 rounded-3xl border border-gray-100 shadow-sm">
-          <form className="space-y-12">
-            <div className="space-y-8">
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Title</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full p-4 text-xl font-bold border border-gray-100 rounded-2xl focus:ring-1 focus:ring-blue-600 outline-none transition-all placeholder:font-normal" placeholder="イベントのタイトル" required />
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Left Column: Editor (2/3) */}
+          <div className="lg:col-span-2 space-y-12">
+            <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm min-h-[700px] flex flex-col">
+              <label className="block text-base font-black text-gray-500 tracking-[0.2em] mb-6 ml-1">イベントの説明</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="flex-1 w-full p-8 bg-gray-50/30 border border-gray-100 rounded-[2rem] focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all resize-none font-light leading-relaxed text-gray-600 text-lg"
+                placeholder="イベントの詳細情報を自由に記入してください..."
+              />
+            </div>
+          </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Start Date & Time</label>
-                  <div className="flex gap-2">
-                    <input type="date" min={today} value={startDate} onChange={(e) => setStartDate(e.target.value)} className="flex-1 p-3 border border-gray-100 rounded-xl focus:ring-1 focus:ring-blue-600 outline-none" required />
-                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-32 p-3 border border-gray-100 rounded-xl focus:ring-1 focus:ring-blue-600 outline-none" required />
+          {/* Right Column: Overview & Settings (1/3) */}
+          <div className="space-y-8">
+            {/* 1. Overview Section: Title, Format, Capacity */}
+            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+              <div>
+                <label className="block text-sm font-black text-gray-400 tracking-[0.2em] mb-6 ml-1 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span> 基本情報
+                </label>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-black text-gray-500 tracking-widest mb-3 ml-1">タイトル</label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full text-xl font-black text-gray-900 bg-gray-50/50 border border-gray-100 rounded-xl p-4 focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all placeholder:text-gray-200"
+                      placeholder="タイトルを入力"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-black text-gray-500 tracking-widest mb-3 ml-1">開催形式</label>
+                      <div className="grid grid-cols-2 p-1 bg-gray-50 border border-gray-100 rounded-xl">
+                        <button type="button" onClick={() => setIsOnline(false)} className={`py-2 rounded-lg text-[9px] font-black tracking-tighter transition-all ${!isOnline ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-900'}`}>会場</button>
+                        <button type="button" onClick={() => setIsOnline(true)} className={`py-2 rounded-lg text-[9px] font-black tracking-tighter transition-all ${isOnline ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-900'}`}>オンライン</button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-black text-gray-500 tracking-widest mb-3 ml-1">定員</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={capacity}
+                          onChange={(e) => setCapacity(parseInt(e.target.value) || 0)}
+                          className="w-full p-2.5 text-lg font-bold bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all font-mono"
+                        />
+                        <span className="text-sm font-bold text-gray-500 tracking-tighter">名</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-4">
-                  <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">End Date & Time</label>
-                  <div className="flex gap-2">
-                    <input type="date" min={startDate || today} value={endDate} onChange={(e) => { setEndDate(e.target.value); setIsEndTimeManual(true); }} className="flex-1 p-3 border border-gray-100 rounded-xl focus:ring-1 focus:ring-blue-600 outline-none" />
-                    <input type="time" value={endTime} onChange={(e) => { setEndTime(e.target.value); setIsEndTimeManual(true); }} className="w-32 p-3 border border-gray-100 rounded-xl focus:ring-1 focus:ring-blue-600 outline-none" />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Location</label>
-                <div className="relative">
-                  <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className="w-full p-4 border border-gray-100 rounded-2xl focus:ring-1 focus:ring-blue-600 outline-none pr-32" placeholder="住所やURLなど" />
-                  {googleMapsUrl && (
-                    <a href={googleMapsUrl} target="_blank" rel="noopener noreferrer" className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-md hover:bg-blue-100 transition-colors">
-                      Google Maps
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Description</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={10} className="w-full p-4 border border-gray-100 rounded-2xl focus:ring-1 focus:ring-blue-600 outline-none resize-y min-h-[200px] font-light leading-relaxed" placeholder="イベントの詳細" />
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={(e) => handleCreateEvent(e, 'draft')}
-                disabled={isLoading}
-                className="flex-1 py-5 bg-gray-50 text-gray-400 text-xs font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-gray-100 transition-all"
-              >
-                下書きとして保存
-              </button>
-              <button
-                type="button"
-                onClick={(e) => handleCreateEvent(e, 'published')}
-                disabled={isLoading}
-                className="flex-[2] py-5 bg-blue-600 text-white text-xs font-bold uppercase tracking-[0.2em] rounded-2xl hover:bg-blue-700 shadow-xl shadow-blue-50 transition-all disabled:bg-blue-300"
-              >
-                {isLoading ? 'Creating...' : 'イベントを公開する'}
-              </button>
+            {/* 2. Logistics Section: Location & Dates */}
+            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+              <div>
+                <label className="block text-sm font-black text-gray-400 tracking-[0.2em] mb-6 ml-1 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span> 開催情報
+                </label>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-black text-gray-500 tracking-widest mb-3 ml-1">
+                      {isOnline ? '配信URL' : '開催場所'}
+                    </label>
+                    <input
+                      type="text"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className="w-full p-4 bg-gray-50/50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all text-sm"
+                      placeholder={isOnline ? 'URLを入力...' : '開催場所を入力...'}
+                    />
+                  </div>
+
+                  <div className="space-y-4 pt-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-black text-gray-500 tracking-widest mb-2 ml-1">開始日</label>
+                        <input type="date" min={today} value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full p-3 bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none font-mono text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-black text-gray-500 tracking-widest mb-2 ml-1">開始時刻</label>
+                        <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full p-3 bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none font-mono text-sm" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-black text-gray-500 tracking-widest mb-2 ml-1">終了日</label>
+                        <input type="date" min={startDate || today} value={endDate} onChange={(e) => { setEndDate(e.target.value); setIsEndTimeManual(true); }} className="w-full p-3 bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none font-mono text-sm" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-black text-gray-500 tracking-widest mb-2 ml-1">終了時刻</label>
+                        <input type="time" value={endTime} onChange={(e) => { setEndTime(e.target.value); setIsEndTimeManual(true); }} className="w-full p-3 bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none font-mono text-sm" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          </form>
+
+            {/* 3. Media & Links Section: Thumbnail & External URL */}
+            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-sm space-y-8">
+              <div>
+                <label className="block text-sm font-black text-gray-400 tracking-[0.2em] mb-6 ml-1 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span> 画像・リンク
+                </label>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-black text-gray-500 tracking-widest mb-3 ml-1">サムネイルプレビュー</label>
+                    <div className="aspect-video rounded-xl overflow-hidden bg-gray-50 border border-gray-100 relative mb-4">
+                      {thumbnailURL ? (
+                        <img src={thumbnailURL} alt="プレビュー" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-400 tracking-widest text-center px-8">サムネイルなし</div>
+                      )}
+                    </div>
+                    <input
+                      type="url"
+                      value={thumbnailURL}
+                      onChange={(e) => setThumbnailURL(e.target.value)}
+                      className="w-full p-3 text-sm bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all font-mono"
+                      placeholder="画像URLを入力..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-black text-gray-500 tracking-widest mb-3 ml-1">外部リンク</label>
+                    <input
+                      type="url"
+                      value={sourceURL}
+                      onChange={(e) => setSourceURL(e.target.value)}
+                      className="w-full p-3 text-sm bg-gray-50/50 border border-gray-100 rounded-lg focus:ring-2 focus:ring-blue-600 focus:bg-white outline-none transition-all font-mono"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

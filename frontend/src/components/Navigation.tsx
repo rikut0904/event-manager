@@ -40,7 +40,7 @@ export default function Navigation() {
       {/* Mobile Header */}
       <div className="lg:hidden flex items-center justify-between px-6 h-16 bg-white border-b border-gray-100 sticky top-0 z-50">
         <Link href="/" className="text-xl font-bold text-gray-900 tracking-tight">
-          Event Manager
+          イベント管理
         </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -77,12 +77,12 @@ export default function Navigation() {
       <aside className="hidden lg:flex flex-col w-64 h-screen bg-white border-r border-gray-100 fixed left-0 top-0 z-30">
         <div className="p-8 pb-12">
           <Link href="/" className="text-2xl font-bold text-gray-900 tracking-tight">
-            Event Manager
+            イベント管理
           </Link>
         </div>
 
         <nav className="flex-1 px-4 space-y-1.5">
-          <div className="text-xs font-bold text-gray-400 mb-4 px-4 uppercase tracking-[0.2em]">Menu</div>
+          <div className="text-xs font-bold text-gray-400 mb-4 px-4 tracking-[0.2em]">メニュー</div>
           {navItems.map((item) => (
             <NavLink key={item.href} item={item} />
           ))}

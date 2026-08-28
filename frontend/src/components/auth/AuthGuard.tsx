@@ -36,7 +36,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-sm font-medium text-gray-400 animate-pulse tracking-widest uppercase italic font-serif">Loading...</div>
+        <div className="text-sm font-medium text-gray-400 animate-pulse tracking-widest italic font-serif">読み込み中...</div>
       </div>
     );
   }

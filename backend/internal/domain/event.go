@@ -14,6 +14,10 @@ type Event struct {
 	Location     string    `json:"location" gorm:"column:location"`
 	DisplayID    string    `json:"display_id" gorm:"unique;not null;index;column:display_id"`
 	Status       string    `json:"status" gorm:"not null;default:draft;column:status"` // "draft", "published"
+	IsOnline     bool      `json:"is_online" gorm:"not null;default:false;column:is_online"`
+	Capacity     int       `json:"capacity" gorm:"not null;default:0;column:capacity"`
+	SourceURL    string    `json:"source_url" gorm:"column:source_url"`
+	ThumbnailURL string    `json:"thumbnail_url" gorm:"column:thumbnail_url"`
 	PopupTiming  string    `json:"popup_timing" gorm:"column:popup_timing"`
 	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt    time.Time `json:"updated_at" gorm:"column:updated_at"`

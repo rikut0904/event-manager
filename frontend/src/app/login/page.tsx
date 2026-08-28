@@ -35,7 +35,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center px-8">
       <div className="max-w-[400px] mx-auto w-full bg-white p-10 rounded-2xl shadow-sm border border-gray-100">
         <div className="mb-10 text-center">
-          <Link href="/" className="text-lg font-bold text-gray-900 tracking-tight">Event Manager</Link>
+          <Link href="/" className="text-lg font-bold text-gray-900 tracking-tight">イベント管理</Link>
           <h2 className="text-2xl font-bold text-gray-900 mt-6 tracking-tight">ログイン</h2>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
