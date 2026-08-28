@@ -10,7 +10,7 @@ import (
 type UserRepository interface {
 	Save(ctx context.Context, user *domain.User) error
 	FindByID(ctx context.Context, id string) (*domain.User, error)
-	UpdateExternalID(ctx context.Context, id string, externalID string) error
+	UpdateConnpassID(ctx context.Context, id string, connpassID string) error
 }
 
 type userRepository struct {
@@ -37,6 +37,6 @@ func (r *userRepository) FindByID(ctx context.Context, id string) (*domain.User,
 	return &user, nil
 }
 
-func (r *userRepository) UpdateExternalID(ctx context.Context, id string, externalID string) error {
-	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Update("external_id", externalID).Error
+func (r *userRepository) UpdateConnpassID(ctx context.Context, id string, connpassID string) error {
+	return r.db.WithContext(ctx).Model(&domain.User{}).Where("id = ?", id).Update("connpass_id", connpassID).Error
 }

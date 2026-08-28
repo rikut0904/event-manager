@@ -11,7 +11,7 @@ type User struct {
 	Username   string    `json:"username" gorm:"unique;column:username"`
 	AvatarURL  string    `json:"avatar_url" gorm:"column:avatar_url"`
 	Bio        string    `json:"bio" gorm:"column:bio"`
-	ExternalID string    `json:"external_id" gorm:"column:external_id"`
+	ConnpassID string    `json:"connpass_id" gorm:"column:connpass_id"`
 	CreatedAt  time.Time `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt  time.Time `json:"updated_at" gorm:"column:updated_at"`
 }

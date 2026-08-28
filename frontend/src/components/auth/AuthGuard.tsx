@@ -13,14 +13,16 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     // ローディング中は何もしない
     if (loading) return;
 
+    const currentPath = pathname || '';
     // パス判定
-    const isGuestOnlyPath = ['/login', '/signup'].includes(pathname);
-    const isProtectedPath = pathname.startsWith('/dashboard');
+    const isGuestOnlyPath = ['/', '/login', '/signup'].includes(currentPath);
+    // /events/[id] は公開。それ以外（/events, /events/new, /events/[id]/edit）は保護。
+    const isPublicEventView = currentPath.startsWith('/events/') && currentPath.split('/').length === 3 && !currentPath.endsWith('/new');
+    const isProtectedPath = currentPath.startsWith('/home') || (currentPath.startsWith('/events') && !isPublicEventView);
 
     if (user) {
-      // ログイン済みで /login や /signup にアクセスした場合は即座にダッシュボードへ
       if (isGuestOnlyPath) {
-        router.replace('/dashboard');
+        router.replace('/home');
       }
     } else {
       // 未ログインで保護されたページにいる場合はトップページへ
@@ -30,18 +32,21 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, pathname, router]);
 
-  // ローディング中は真っ白な画面またはローディング表示を出して、一瞬のチラつきを防ぐ
+  // ローディング中はローディング表示を出す
   if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-sm font-medium text-gray-400 animate-pulse tracking-widest uppercase italic font-serif">Loading...</div>
+        <div className="text-sm font-medium text-gray-400 animate-pulse tracking-widest italic font-serif">読み込み中...</div>
       </div>
     );
   }
 
-  // リダイレクトが必要な状態（ログイン済みでログイン画面にいる等）では中身を表示しない
-  const isGuestOnlyPath = ['/', '/login', '/signup'].includes(pathname);
-  const isProtectedPath = pathname.startsWith('/dashboard');
+  const currentPath = pathname || '';
+  const isGuestOnlyPath = ['/', '/login', '/signup'].includes(currentPath);
+  // 保護対象かつ未ログインの場合は何も表示せずuseEffectのリダイレクトを待つ
+  const isPublicEventView = currentPath.startsWith('/events/') && currentPath.split('/').length === 3 && !currentPath.endsWith('/new');
+  const isProtectedPath = currentPath.startsWith('/home') || (currentPath.startsWith('/events') && !isPublicEventView);
+
   if (user && isGuestOnlyPath) return null;
   if (!user && isProtectedPath) return null;
 

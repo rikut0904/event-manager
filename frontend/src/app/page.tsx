@@ -5,15 +5,15 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function LandingPage() {
   const { user } = useAuth();
-  const dashboardLink = '/dashboard';
+  const homeLink = '/home';
 
   return (
     <div className="min-h-screen bg-white">
       <header className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <span className="font-bold text-gray-900 tracking-tight">Event Manager</span>
+        <span className="font-bold text-gray-900 tracking-tight">イベント管理</span>
         <div className="flex gap-4 items-center">
-          <Link href={user ? dashboardLink : "/login"} className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
-            {user ? 'ダッシュボード' : 'ログイン'}
+          <Link href={user ? homeLink : "/login"} className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+            {user ? 'ホーム' : 'ログイン'}
           </Link>
           {!user && (
             <Link href="/signup" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
@@ -32,10 +32,10 @@ export default function LandingPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
           <Link
-            href={user ? dashboardLink : "/signup"}
+            href={user ? homeLink : "/signup"}
             className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 text-center"
           >
-            {user ? 'ダッシュボードへ移動' : '無料でアカウント作成'}
+            {user ? 'ホームへ移動' : '無料でアカウント作成'}
           </Link>
           {!user && (
             <Link
@@ -50,4 +50,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

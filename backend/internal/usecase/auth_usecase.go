@@ -4,19 +4,22 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"backend/internal/domain"
 	"backend/internal/infrastructure/firebase"
 	"backend/internal/interface/repository"
+	firebaseauth "firebase.google.com/go/v4/auth"
 )
 
 type AuthUsecase interface {
 	Login(ctx context.Context, email, password string) (*domain.AuthResponse, error)
 	SignUp(ctx context.Context, email, password string) (*domain.User, error)
-	LinkExternalID(ctx context.Context, userID, externalID string) error
+	LinkConnpass(ctx context.Context, userID, connpassID string) error
 }
 
 type authUsecase struct {
@@ -73,16 +76,35 @@ func (u *authUsecase) Login(ctx context.Context, email, password string) (*domai
 }
 
 func (u *authUsecase) SignUp(ctx context.Context, email, password string) (*domain.User, error) {
-	// Firebaseでユーザー作成（実装の詳細は既存のauthパッケージ等に依存するため簡略化）
-	// 実際には fbClient.Auth.CreateUser を使用
-	// ここでは、AuthUsecaseの役割としてDB保存まで行う
-	
-	// ※簡略化のため、ログイン時と同様のロジックでDB保存されることを前提とするか、
-	// 明示的に CreateUser を呼び出した後に Repo.Save を行う。
-	return &domain.User{Email: email}, nil // 実際にはFirebaseのUIDが必要
+	params := (&firebaseauth.UserToCreate{}).
+		Email(email).
+		Password(password)
+
+	firebaseUser, err := u.fbClient.Auth.CreateUser(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+
+	user := &domain.User{
+		ID:    firebaseUser.UID,
+		Email: firebaseUser.Email,
+	}
+	if err := u.userRepo.Save(ctx, user); err != nil {
+		// DB保存に失敗した場合は、先に作成したFirebaseユーザーを削除して整合性を保つ。
+		if rollbackErr := u.fbClient.Auth.DeleteUser(ctx, firebaseUser.UID); rollbackErr != nil {
+			return nil, fmt.Errorf("ユーザー情報の保存に失敗し、Firebaseユーザーのロールバックにも失敗しました: %w", errors.Join(err, rollbackErr))
+		}
+		return nil, fmt.Errorf("ユーザー情報の保存に失敗したため、Firebaseユーザーをロールバックしました: %w", err)
+	}
+
+	return user, nil
 }
 
-func (u *authUsecase) LinkExternalID(ctx context.Context, userID, externalID string) error {
-	// DBに外部IDを保存
-	return u.userRepo.UpdateExternalID(ctx, userID, externalID)
+func (u *authUsecase) LinkConnpass(ctx context.Context, userID, connpassID string) error {
+	connpassID = strings.TrimSpace(connpassID)
+	if connpassID == "" {
+		return errors.New("connpass IDは必須です")
+	}
+
+	return u.userRepo.UpdateConnpassID(ctx, userID, connpassID)
 }

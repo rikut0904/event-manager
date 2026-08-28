@@ -28,3 +28,21 @@ func AuthMiddleware(fbClient *firebase.Client) echo.MiddlewareFunc {
 		}
 	}
 }
+
+func OptionalAuthMiddleware(fbClient *firebase.Client) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			authHeader := c.Request().Header.Get("Authorization")
+			if authHeader == "" {
+				return next(c)
+			}
+
+			idToken := strings.Replace(authHeader, "Bearer ", "", 1)
+			token, err := fbClient.Auth.VerifyIDToken(c.Request().Context(), idToken)
+			if err == nil {
+				c.Set("userID", token.UID)
+			}
+			return next(c)
+		}
+	}
+}

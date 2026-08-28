@@ -50,7 +50,10 @@ func (h *AuthHandler) SignUp(c echo.Context) error {
 }
 
 func (h *AuthHandler) LinkConnpass(c echo.Context) error {
-	userID := c.Get("userID").(string)
+	userID, ok := c.Get("userID").(string)
+	if !ok || userID == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "認証情報がありません")
+	}
 
 	var req struct {
 		ConnpassID string `json:"connpass_id"`
@@ -59,9 +62,8 @@ func (h *AuthHandler) LinkConnpass(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	err := h.authUsecase.LinkExternalID(c.Request().Context(), userID, req.ConnpassID)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	if err := h.authUsecase.LinkConnpass(c.Request().Context(), userID, req.ConnpassID); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	return c.NoContent(http.StatusNoContent)
