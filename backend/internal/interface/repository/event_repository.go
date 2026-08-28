@@ -33,13 +33,17 @@ func (r *eventRepository) Create(ctx context.Context, event *domain.Event) error
 
 func (r *eventRepository) Update(ctx context.Context, event *domain.Event) error {
 	return r.db.WithContext(ctx).Model(event).Updates(map[string]interface{}{
-		"title":        event.Title,
-		"description":  event.Description,
-		"start_time":   event.StartTime,
-		"end_time":     event.EndTime,
-		"location":     event.Location,
-		"status":       event.Status,
-		"updated_at":   time.Now(),
+		"title":         event.Title,
+		"description":   event.Description,
+		"start_time":    event.StartTime,
+		"end_time":      event.EndTime,
+		"location":      event.Location,
+		"status":        event.Status,
+		"is_online":     event.IsOnline,
+		"capacity":      event.Capacity,
+		"source_url":    event.SourceURL,
+		"thumbnail_url": event.ThumbnailURL,
+		"updated_at":    time.Now(),
 	}).Error
 }
 
