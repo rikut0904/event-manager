@@ -12,7 +12,7 @@ import (
 )
 
 type EventUsecase interface {
-	CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error)
+	CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, status string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error)
 	UpdateEvent(ctx context.Context, creatorID string, eventID string, title, description string, startTime string, endTime string, location string, status string, isOnline *bool, capacity *int, sourceURL *string, thumbnailURL *string) (*domain.Event, error)
 	DeleteEvent(ctx context.Context, creatorID string, eventID string) error
 	GetMyEvents(ctx context.Context, creatorID string) ([]domain.Event, error)
@@ -40,7 +40,7 @@ func (u *eventUsecase) validateEvent(title string, startTime, endTime time.Time)
 	return nil
 }
 
-func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error) {
+func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title, description string, startTime string, endTime string, location string, status string, isOnline bool, capacity int, sourceURL string, thumbnailURL string) (*domain.Event, error) {
 	shortID := strings.ReplaceAll(uuid.New().String(), "-", "")[:12]
 	parsedStart, _ := time.Parse(time.RFC3339, startTime)
 	var parsedEnd time.Time
@@ -55,10 +55,16 @@ func (u *eventUsecase) CreateEvent(ctx context.Context, creatorID string, title,
 	if err := u.validateEvent(title, parsedStart, parsedEnd); err != nil {
 		return nil, err
 	}
+	if status == "" {
+		status = "draft"
+	}
+	if status != "draft" && status != "published" {
+		return nil, errors.New("ステータスが不正です")
+	}
 	event := &domain.Event{
 		CreatorID: creatorID, Title: title, Description: description,
 		StartTime: parsedStart, EndTime: parsedEnd, Location: location,
-		DisplayID: shortID, Status: "draft",
+		DisplayID: shortID, Status: status,
 		IsOnline: isOnline, Capacity: capacity, SourceURL: sourceURL, ThumbnailURL: thumbnailURL,
 	}
 	err := u.eventRepo.Create(ctx, event)

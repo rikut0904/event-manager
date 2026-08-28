@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"net/http"
 	"backend/internal/usecase"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 type EventHandler struct {
@@ -23,6 +23,7 @@ func (h *EventHandler) Create(c echo.Context) error {
 		StartTime    string `json:"start_time"`
 		EndTime      string `json:"end_time"`
 		Location     string `json:"location"`
+		Status       string `json:"status"`
 		IsOnline     bool   `json:"is_online"`
 		Capacity     int    `json:"capacity"`
 		SourceURL    string `json:"source_url"`
@@ -32,7 +33,7 @@ func (h *EventHandler) Create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	event, err := h.eventUsecase.CreateEvent(c.Request().Context(), userID, req.Title, req.Description, req.StartTime, req.EndTime, req.Location, req.IsOnline, req.Capacity, req.SourceURL, req.ThumbnailURL)
+	event, err := h.eventUsecase.CreateEvent(c.Request().Context(), userID, req.Title, req.Description, req.StartTime, req.EndTime, req.Location, req.Status, req.IsOnline, req.Capacity, req.SourceURL, req.ThumbnailURL)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
