@@ -106,6 +106,7 @@ export default function EventViewPage() {
                   <iframe
                     width="100%"
                     height="100%"
+                    title="イベント会場の地図"
                     style={{ border: 0 }}
                     loading="lazy"
                     allowFullScreen
