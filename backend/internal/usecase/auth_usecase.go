@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -87,7 +88,11 @@ func (u *authUsecase) SignUp(ctx context.Context, email, password string) (*doma
 		Email: firebaseUser.Email,
 	}
 	if err := u.userRepo.Save(ctx, user); err != nil {
-		return nil, err
+		// DB保存に失敗した場合は、先に作成したFirebaseユーザーを削除して整合性を保つ。
+		if rollbackErr := u.fbClient.Auth.DeleteUser(ctx, firebaseUser.UID); rollbackErr != nil {
+			return nil, fmt.Errorf("ユーザー情報の保存に失敗し、Firebaseユーザーのロールバックにも失敗しました: %w", errors.Join(err, rollbackErr))
+		}
+		return nil, fmt.Errorf("ユーザー情報の保存に失敗したため、Firebaseユーザーをロールバックしました: %w", err)
 	}
 
 	return user, nil
