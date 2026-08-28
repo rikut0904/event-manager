@@ -122,8 +122,14 @@ func (u *eventUsecase) UpdateEvent(ctx context.Context, creatorID string, eventI
 	}
 
 	if status != "" {
+		if status != "draft" && status != "published" {
+			return nil, errors.New("ステータスが不正です")
+		}
+		if event.Status == "finished" {
+			return nil, errors.New("終了済みイベントのステータスは変更できません")
+		}
 		if event.Status == "published" && status == "draft" {
-			return nil, errors.New("once published, event cannot be moved back to draft")
+			return nil, errors.New("公開済みイベントを下書きに戻すことはできません")
 		}
 		event.Status = status
 	}
