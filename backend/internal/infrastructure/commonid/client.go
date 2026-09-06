@@ -19,6 +19,7 @@ var (
 	ErrInvalidCallback = errors.New("Common IDのコールバックが不正です")
 	ErrStateMismatch   = errors.New("Common IDのstateが一致しません")
 	ErrInvalidSession  = errors.New("Common IDのセッションが無効です")
+	commonIDHTTPClient = &http.Client{Timeout: 30 * time.Second}
 )
 
 type Config struct {
@@ -101,7 +102,7 @@ func (c *Client) Exchange(ctx context.Context, callback url.Values, pending Pend
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("X-API-Key", c.cfg.APIKey)
-	res, err := http.DefaultClient.Do(req)
+	res, err := commonIDHTTPClient.Do(req)
 	if err != nil {
 		return User{}, err
 	}
@@ -131,7 +132,7 @@ func (c *Client) CheckSession(ctx context.Context, token string) (User, error) {
 	req.Header.Set("X-API-Key", c.cfg.APIKey)
 	req.Header.Set("X-Client-ID", c.cfg.ClientID)
 	req.AddCookie(&http.Cookie{Name: "common_id_session", Value: token})
-	res, err := http.DefaultClient.Do(req)
+	res, err := commonIDHTTPClient.Do(req)
 	if err != nil {
 		return User{}, err
 	}
