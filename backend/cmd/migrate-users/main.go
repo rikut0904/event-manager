@@ -111,7 +111,7 @@ func main() {
 		}
 		log.Printf("DB移管完了: %d users", len(mappings))
 	} else {
-		log.Printf("dry-run完了: %d users（DBは変更していません）", len(mappings))
+		log.Printf("Common ID移管完了（アプリDBは未更新）: %d users", len(mappings))
 	}
 }
 
