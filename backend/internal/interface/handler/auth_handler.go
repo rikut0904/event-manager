@@ -38,6 +38,7 @@ func (h *AuthHandler) Begin(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	h.pendingMu.Lock()
+	h.cleanupExpiredStatesLocked(time.Now().UTC())
 	h.pending[pending.State] = pending
 	h.backPaths[pending.State] = safeBackPath(c.QueryParam("back_path"))
 	h.pendingMu.Unlock()
@@ -90,9 +91,24 @@ func (h *AuthHandler) BeginLogout(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "ログアウトを開始できません")
 	}
 	h.pendingMu.Lock()
-	h.logoutState[state] = time.Now().Add(10 * time.Minute)
+	h.cleanupExpiredStatesLocked(time.Now().UTC())
+	h.logoutState[state] = time.Now().UTC().Add(10 * time.Minute)
 	h.pendingMu.Unlock()
 	return c.Redirect(http.StatusFound, logoutURL)
+}
+
+func (h *AuthHandler) cleanupExpiredStatesLocked(now time.Time) {
+	for state, pending := range h.pending {
+		if now.After(pending.ExpiresAt) {
+			delete(h.pending, state)
+			delete(h.backPaths, state)
+		}
+	}
+	for state, expiresAt := range h.logoutState {
+		if now.After(expiresAt) {
+			delete(h.logoutState, state)
+		}
+	}
 }
 
 func (h *AuthHandler) LogoutCallback(c echo.Context) error {
