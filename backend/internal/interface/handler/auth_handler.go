@@ -113,10 +113,10 @@ func (h *AuthHandler) frontendRedirect(path string) string {
 		return path
 	}
 	parsed, err := url.Parse(path)
-	if err != nil || !parsed.IsAbs() || parsed.Host != "" {
-		return h.frontendURL + path
+	if err != nil || parsed.IsAbs() || parsed.Host != "" || !strings.HasPrefix(path, "/") || strings.HasPrefix(path, "//") {
+		return h.frontendURL + "/"
 	}
-	return h.frontendURL + "/"
+	return h.frontendURL + path
 }
 
 func safeBackPath(path string) string {
