@@ -7,6 +7,7 @@ import (
 
 	"backend/internal/domain"
 	"backend/internal/interface/repository"
+	"gorm.io/gorm"
 )
 
 type AuthUsecase interface {
@@ -38,6 +39,9 @@ func (u *authUsecase) SyncCommonUser(ctx context.Context, commonUserID, email st
 	}
 	user, err := u.userRepo.FindByID(ctx, commonUserID)
 	if err != nil {
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
 		user = &domain.User{ID: commonUserID, Email: email}
 		if err := u.userRepo.Save(ctx, user); err != nil {
 			return nil, err
