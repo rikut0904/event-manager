@@ -21,7 +21,7 @@ func NewRouter(
 	e := echo.New()
 
 	// The same canonical app origin is used for the frontend redirect and CORS.
-	allowedOrigins := []string{strings.TrimSpace(appOrigin)}
+	allowedOrigins := []string{normalizeOrigin(appOrigin)}
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -57,4 +57,8 @@ func NewRouter(
 	r.GET("/events/:id", eventHandler.GetByID)
 
 	return e
+}
+
+func normalizeOrigin(origin string) string {
+	return strings.TrimRight(strings.TrimSpace(origin), "/")
 }
