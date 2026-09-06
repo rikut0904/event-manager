@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -176,6 +177,7 @@ func readJSONL(path string) ([]migrationUser, error) {
 
 func migrate(ctx context.Context, endpoint, apiKey, clientID string, dryRun, allowUnverified bool, users []migrationUser) ([]migrationResult, error) {
 	all := make([]migrationResult, 0, len(users))
+	httpClient := &http.Client{Timeout: 30 * time.Second}
 	for start := 0; start < len(users); start += 1000 {
 		end := start + 1000
 		if end > len(users) {
@@ -196,7 +198,7 @@ func migrate(ctx context.Context, endpoint, apiKey, clientID string, dryRun, all
 		}
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("X-API-Key", apiKey)
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("Common ID移管APIへの接続に失敗しました: %w", err)
 		}
