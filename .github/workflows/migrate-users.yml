@@ -1,0 +1,67 @@
+name: Migrate users to Common ID
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Common ID移管をdry-runで実行する"
+        required: true
+        type: boolean
+        default: true
+      update_db:
+        description: "成功した移管結果でアプリDBを更新する"
+        required: true
+        type: boolean
+        default: false
+      allow_unverified:
+        description: "未検証メールのCommon IDユーザーを再利用する"
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Run user migration
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          COMMON_ID_API_ORIGIN: ${{ vars.COMMON_ID_API_ORIGIN }}
+          COMMON_ID_CLIENT_ID: ${{ secrets.COMMON_ID_CLIENT_ID }}
+          COMMON_ID_API_KEY: ${{ secrets.COMMON_ID_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+
+          : "${DATABASE_URL:?PRODUCTION_DATABASE_URLが設定されていません}"
+          : "${COMMON_ID_API_ORIGIN:?COMMON_ID_API_ORIGINが設定されていません}"
+          : "${COMMON_ID_CLIENT_ID:?COMMON_ID_CLIENT_IDが設定されていません}"
+          : "${COMMON_ID_API_KEY:?COMMON_ID_API_KEYが設定されていません}"
+          : "${FIREBASE_PROJECT_ID:?FIREBASE_PROJECT_IDが設定されていません}"
+          : "${FIREBASE_SERVICE_ACCOUNT_JSON:?FIREBASE_SERVICE_ACCOUNT_JSONが設定されていません}"
+
+          if [[ "${{ inputs.update_db }}" == "true" && "${{ inputs.dry_run }}" != "false" ]]; then
+            echo "update_db=true は dry_run=false の場合のみ指定できます" >&2
+            exit 1
+          fi
+
+          go run ./cmd/migrate-users \
+            -dry-run="${{ inputs.dry_run }}" \
+            -update-db="${{ inputs.update_db }}" \
+            -allow-unverified="${{ inputs.allow_unverified }}"
