@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"backend/internal/infrastructure/commonid"
+	"backend/internal/infrastructure/session"
 	"backend/internal/usecase"
 	"github.com/labstack/echo/v4"
 )
@@ -15,14 +16,15 @@ import (
 type AuthHandler struct {
 	authUsecase usecase.AuthUsecase
 	commonID    *commonid.Client
+	appSession  *session.Manager
 	frontendURL string
 	pendingMu   sync.Mutex
 	pending     map[string]commonid.Pending
 	logoutState map[string]time.Time
 }
 
-func NewAuthHandler(u usecase.AuthUsecase, commonIDClient *commonid.Client, frontendOrigin string) *AuthHandler {
-	return &AuthHandler{authUsecase: u, commonID: commonIDClient, frontendURL: strings.TrimRight(frontendOrigin, "/"), pending: make(map[string]commonid.Pending), logoutState: make(map[string]time.Time)}
+func NewAuthHandler(u usecase.AuthUsecase, commonIDClient *commonid.Client, frontendOrigin string, appSession *session.Manager) *AuthHandler {
+	return &AuthHandler{authUsecase: u, commonID: commonIDClient, appSession: appSession, frontendURL: strings.TrimRight(frontendOrigin, "/"), pending: make(map[string]commonid.Pending), logoutState: make(map[string]time.Time)}
 }
 
 func (h *AuthHandler) Begin(c echo.Context) error {
@@ -59,6 +61,11 @@ func (h *AuthHandler) Callback(c echo.Context) error {
 	if _, err := h.authUsecase.SyncCommonUser(c.Request().Context(), commonUser.CommonUserID, commonUser.Email); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "ユーザー情報を保存できませんでした")
 	}
+	appCookie, err := h.appSession.Issue(commonUser.CommonUserID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "アプリセッションを発行できませんでした")
+	}
+	c.SetCookie(appCookie)
 	backPath := c.QueryParam("back_path")
 	if backPath == "" || backPath[0] != '/' || (len(backPath) > 1 && backPath[1] == '/') {
 		backPath = "/home"
@@ -71,6 +78,7 @@ func (h *AuthHandler) AuthCallback(c echo.Context) error {
 }
 
 func (h *AuthHandler) BeginLogout(c echo.Context) error {
+	c.SetCookie(h.appSession.ClearCookie())
 	if h.commonID == nil {
 		return c.Redirect(http.StatusFound, "/")
 	}
@@ -85,6 +93,7 @@ func (h *AuthHandler) BeginLogout(c echo.Context) error {
 }
 
 func (h *AuthHandler) LogoutCallback(c echo.Context) error {
+	c.SetCookie(h.appSession.ClearCookie())
 	state := c.QueryParam("state")
 	h.pendingMu.Lock()
 	expiresAt, ok := h.logoutState[state]

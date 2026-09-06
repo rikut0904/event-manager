@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"backend/internal/infrastructure/commonid"
+	"backend/internal/infrastructure/session"
 	"backend/internal/interface/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -15,6 +16,7 @@ func NewRouter(
 	eventHandler *handler.EventHandler,
 	commonID *commonid.Client,
 	appOrigin string,
+	appSession *session.Manager,
 ) *echo.Echo {
 	e := echo.New()
 
@@ -35,16 +37,16 @@ func NewRouter(
 	e.GET("/auth/logout", authHandler.BeginLogout)
 	e.GET("/auth/logout/callback", authHandler.LogoutCallback)
 	e.GET("/auth/:intent", authHandler.Begin)
-	e.POST("/auth/link-connpass", authHandler.LinkConnpass, AuthMiddleware(commonID))
+	e.POST("/auth/link-connpass", authHandler.LinkConnpass, AuthMiddleware(appSession))
 
 	// 公開閲覧用
 	e.GET("/api/v1/events/published", eventHandler.GetPublished)
-	e.GET("/api/v1/events/view/:id", eventHandler.GetByID, OptionalAuthMiddleware(commonID))
+	e.GET("/api/v1/events/view/:id", eventHandler.GetByID, OptionalAuthMiddleware(appSession))
 	e.GET("/api/v1/events/public/:display_id", eventHandler.GetPublicByDisplayID)
 
 	// Protected routes
 	r := e.Group("/api/v1")
-	r.Use(AuthMiddleware(commonID))
+	r.Use(AuthMiddleware(appSession))
 	r.GET("/users/me", authHandler.CurrentUser)
 
 	// Event routes

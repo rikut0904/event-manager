@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"backend/internal/infrastructure/commonid"
 	"backend/internal/infrastructure/database"
+	"backend/internal/infrastructure/session"
 	"backend/internal/infrastructure/web"
 	"backend/internal/interface/handler"
 	"backend/internal/interface/repository"
@@ -22,6 +24,15 @@ func main() {
 		log.Println("No .env file found")
 	}
 	appOrigin, err := requiredEnv("APP_ORIGIN")
+	if err != nil {
+		log.Fatal(err)
+	}
+	appSessionSecret, err := requiredEnv("APP_SESSION_SECRET")
+	if err != nil {
+		log.Fatal(err)
+	}
+	secureCookie, _ := strconv.ParseBool(os.Getenv("APP_SESSION_SECURE"))
+	appSession, err := session.New(appSessionSecret, secureCookie)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,7 +65,7 @@ func main() {
 
 	// Handlers
 	healthHandler := handler.NewHealthHandler(healthUsecase)
-	authHandler := handler.NewAuthHandler(authUsecase, commonID, appOrigin)
+	authHandler := handler.NewAuthHandler(authUsecase, commonID, appOrigin, appSession)
 	eventHandler := handler.NewEventHandler(eventUsecase)
 
 	// Background Tasks: 終了時刻を過ぎたイベントを自動で finished に更新
@@ -74,7 +85,7 @@ func main() {
 	}
 
 	// Router
-	e := web.NewRouter(healthHandler, authHandler, eventHandler, commonID, appOrigin)
+	e := web.NewRouter(healthHandler, authHandler, eventHandler, commonID, appOrigin, appSession)
 
 	port := os.Getenv("PORT")
 	if port == "" {

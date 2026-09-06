@@ -3,40 +3,40 @@ package web
 import (
 	"net/http"
 
-	"backend/internal/infrastructure/commonid"
+	"backend/internal/infrastructure/session"
 	"github.com/labstack/echo/v4"
 )
 
-func AuthMiddleware(commonID *commonid.Client) echo.MiddlewareFunc {
+func AuthMiddleware(appSession *session.Manager) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if commonID == nil {
-				return echo.NewHTTPError(http.StatusServiceUnavailable, "Common IDが設定されていません")
+			if appSession == nil {
+				return echo.NewHTTPError(http.StatusServiceUnavailable, "アプリセッションが設定されていません")
 			}
-			cookie, err := c.Cookie("common_id_session")
+			cookie, err := c.Cookie(session.CookieName)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "ログインが必要です")
 			}
-			user, err := commonID.CheckSession(c.Request().Context(), cookie.Value)
+			userID, err := appSession.Verify(cookie.Value)
 			if err != nil {
 				return echo.NewHTTPError(http.StatusUnauthorized, "ログインセッションが無効です")
 			}
-			c.Set("userID", user.CommonUserID)
+			c.Set("userID", userID)
 			return next(c)
 		}
 	}
 }
 
-func OptionalAuthMiddleware(commonID *commonid.Client) echo.MiddlewareFunc {
+func OptionalAuthMiddleware(appSession *session.Manager) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if commonID == nil {
+			if appSession == nil {
 				return next(c)
 			}
-			cookie, err := c.Cookie("common_id_session")
+			cookie, err := c.Cookie(session.CookieName)
 			if err == nil {
-				if user, checkErr := commonID.CheckSession(c.Request().Context(), cookie.Value); checkErr == nil {
-					c.Set("userID", user.CommonUserID)
+				if userID, verifyErr := appSession.Verify(cookie.Value); verifyErr == nil {
+					c.Set("userID", userID)
 				}
 			}
 			return next(c)

@@ -76,8 +76,9 @@
 #### ログイン実装メモ
 - フロントエンドにログイン・登録ページは持たず、ボタンからバックエンドの `GET /auth/login` または `GET /auth/signup` へ遷移する。
 - バックエンドはCommon IDへリダイレクトし、認証後に `GET /auth/callback` で認可コードをサーバー間交換する。
-- Common IDの `common_id_session` Cookieをバックエンドが検証し、取得した `common_user_id` をアプリDBのユーザーIDとして利用する。
-- 認証が必要なAPIはAuthorization Bearerトークンではなく、Common IDセッションCookieを使用する。バックエンドの認証ミドルウェアがCommon IDセッションを検証し、Echo contextに `userID` をセットする。
+- 認証コールバックでCommon IDの `common_user_id` をアプリDBへ同期し、署名付きHttpOnlyの `app_session` Cookieを発行する。
+- 認証が必要なAPIは `app_session` をローカル検証し、Common IDへの外部HTTP通信を毎回実行しない。Common IDとのセッション確認は認証開始・コールバック時に行う。
+- `APP_SESSION_SECRET` は32文字以上のバックエンド専用秘密値とし、`APP_SESSION_SECURE=true` はHTTPS環境でのみ設定する。
 - 認証後・ログアウト後の画面遷移先は `APP_ORIGIN` で指定する。ローカル開発では `http://localhost:3000` とする。
 - Common ID APIとのサーバー間通信先は `COMMON_ID_API_ORIGIN`、ブラウザ向けCommon ID画面は `COMMON_ID_ORIGIN` で指定する。
 - `COMMON_ID_API_KEY`、認可コード、PKCE verifierなどの秘密情報はバックエンドだけで保持し、ブラウザやログへ出力しない。
