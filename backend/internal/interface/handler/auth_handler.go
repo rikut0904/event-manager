@@ -20,11 +20,12 @@ type AuthHandler struct {
 	frontendURL string
 	pendingMu   sync.Mutex
 	pending     map[string]commonid.Pending
+	backPaths   map[string]string
 	logoutState map[string]time.Time
 }
 
 func NewAuthHandler(u usecase.AuthUsecase, commonIDClient *commonid.Client, frontendOrigin string, appSession *session.Manager) *AuthHandler {
-	return &AuthHandler{authUsecase: u, commonID: commonIDClient, appSession: appSession, frontendURL: strings.TrimRight(frontendOrigin, "/"), pending: make(map[string]commonid.Pending), logoutState: make(map[string]time.Time)}
+	return &AuthHandler{authUsecase: u, commonID: commonIDClient, appSession: appSession, frontendURL: strings.TrimRight(frontendOrigin, "/"), pending: make(map[string]commonid.Pending), backPaths: make(map[string]string), logoutState: make(map[string]time.Time)}
 }
 
 func (h *AuthHandler) Begin(c echo.Context) error {
@@ -38,6 +39,7 @@ func (h *AuthHandler) Begin(c echo.Context) error {
 	}
 	h.pendingMu.Lock()
 	h.pending[pending.State] = pending
+	h.backPaths[pending.State] = safeBackPath(c.QueryParam("back_path"))
 	h.pendingMu.Unlock()
 	return c.Redirect(http.StatusFound, authURL)
 }
@@ -50,6 +52,8 @@ func (h *AuthHandler) Callback(c echo.Context) error {
 	h.pendingMu.Lock()
 	pending, ok := h.pending[state]
 	delete(h.pending, state)
+	backPath := h.backPaths[state]
+	delete(h.backPaths, state)
 	h.pendingMu.Unlock()
 	if !ok {
 		return echo.NewHTTPError(http.StatusBadRequest, "認証状態が見つかりません。もう一度お試しください")
@@ -66,8 +70,7 @@ func (h *AuthHandler) Callback(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "アプリセッションを発行できませんでした")
 	}
 	c.SetCookie(appCookie)
-	backPath := c.QueryParam("back_path")
-	if backPath == "" || backPath[0] != '/' || (len(backPath) > 1 && backPath[1] == '/') {
+	if backPath == "" {
 		backPath = "/home"
 	}
 	return c.Redirect(http.StatusFound, h.frontendRedirect(backPath))
@@ -114,6 +117,13 @@ func (h *AuthHandler) frontendRedirect(path string) string {
 		return h.frontendURL + path
 	}
 	return h.frontendURL + "/"
+}
+
+func safeBackPath(path string) string {
+	if path == "" || path[0] != '/' || (len(path) > 1 && path[1] == '/') {
+		return "/home"
+	}
+	return path
 }
 
 func (h *AuthHandler) CurrentUser(c echo.Context) error {
