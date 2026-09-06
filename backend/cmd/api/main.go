@@ -49,7 +49,7 @@ func main() {
 
 	// Usecases
 	healthUsecase := usecase.NewHealthUsecase()
-	authUsecase := usecase.NewAuthUsecase(nil, userRepo)
+	authUsecase := usecase.NewAuthUsecase(userRepo)
 	eventUsecase := usecase.NewEventUsecase(eventRepo)
 
 	// Handlers

@@ -119,40 +119,6 @@ func (h *AuthHandler) CurrentUser(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-func (h *AuthHandler) Login(c echo.Context) error {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	resp, err := h.authUsecase.Login(c.Request().Context(), req.Email, req.Password)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
-	}
-
-	return c.JSON(http.StatusOK, resp)
-}
-
-func (h *AuthHandler) SignUp(c echo.Context) error {
-	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	user, err := h.authUsecase.SignUp(c.Request().Context(), req.Email, req.Password)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(http.StatusOK, user)
-}
-
 func (h *AuthHandler) LinkConnpass(c echo.Context) error {
 	userID, ok := c.Get("userID").(string)
 	if !ok || userID == "" {
