@@ -1,4 +1,4 @@
-.PHONY: build up down ps fmt lint test frontend-fmt frontend-lint frontend-test backend-fmt backend-lint backend-test
+.PHONY: build up down ps fmt lint test frontend-fmt frontend-lint frontend-test backend-fmt backend-lint backend-test migrate-users
 
 # Docker operations (Containers)
 build:
@@ -37,3 +37,7 @@ backend-lint:
 
 backend-test:
 	cd backend && go test ./...
+
+# Data migration is dry-run by default. Set MIGRATE_FLAGS explicitly for a real run.
+migrate-users:
+	cd backend && go run ./cmd/migrate-users $(MIGRATE_FLAGS)

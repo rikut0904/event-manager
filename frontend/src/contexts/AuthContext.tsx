@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiRequest } from '@/lib/api';
+import { COMMON_ID_LOGIN_URL, COMMON_ID_LOGOUT_URL, COMMON_ID_SIGNUP_URL } from '@/lib/auth';
 
 interface User {
   id: string;
@@ -29,48 +30,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const savedUser = localStorage.getItem('auth_user');
-      const token = localStorage.getItem('auth_token');
-      
-      if (savedUser && token) {
-        setUser(JSON.parse(savedUser));
-      }
-    } catch (err) {
-      console.error('Failed to initialize auth from localStorage:', err);
-      // 状態が不整合な場合はクリーンアップ
-      localStorage.removeItem('auth_user');
-      localStorage.removeItem('auth_token');
-    } finally {
-      // エラーが発生しても必ずloadingを解除する
-      setLoading(false);
-    }
+    apiRequest('/api/v1/users/me')
+      .then((currentUser) => setUser(currentUser))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const data = await apiRequest('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    localStorage.setItem('auth_token', data.token);
-    localStorage.setItem('auth_user', JSON.stringify(data.user));
-    setUser(data.user);
+  const login = async (_email: string, _password: string) => {
+    window.location.href = COMMON_ID_LOGIN_URL;
   };
 
-  const signUp = async (email: string, password: string) => {
-    await apiRequest('/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-    // アカウント作成後、そのままログインを実行
-    await login(email, password);
+  const signUp = async (_email: string, _password: string) => {
+    window.location.href = COMMON_ID_SIGNUP_URL;
   };
 
   const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
     setUser(null);
-    window.location.href = '/'; // 確実に状態をリセットしてトップへ
+    window.location.href = COMMON_ID_LOGOUT_URL;
   };
 
   const linkConnpass = async (connpassID: string) => {
@@ -82,7 +58,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const updatedUser = { ...user, connpass_id: connpassID };
       setUser(updatedUser);
-      localStorage.setItem('auth_user', JSON.stringify(updatedUser));
     }
   };
 

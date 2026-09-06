@@ -17,6 +17,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
+	credentials: 'include',
     headers,
   });
 

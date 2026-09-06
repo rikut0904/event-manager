@@ -15,7 +15,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     const currentPath = pathname || '';
     // パス判定
-    const isGuestOnlyPath = ['/', '/login', '/signup'].includes(currentPath);
+    const isGuestOnlyPath = currentPath === '/';
     // /events/[id] は公開。それ以外（/events, /events/new, /events/[id]/edit）は保護。
     const isPublicEventView = currentPath.startsWith('/events/') && currentPath.split('/').length === 3 && !currentPath.endsWith('/new');
     const isProtectedPath = currentPath.startsWith('/home') || (currentPath.startsWith('/events') && !isPublicEventView);
@@ -42,7 +42,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   const currentPath = pathname || '';
-  const isGuestOnlyPath = ['/', '/login', '/signup'].includes(currentPath);
+  const isGuestOnlyPath = currentPath === '/';
   // 保護対象かつ未ログインの場合は何も表示せずuseEffectのリダイレクトを待つ
   const isPublicEventView = currentPath.startsWith('/events/') && currentPath.split('/').length === 3 && !currentPath.endsWith('/new');
   const isProtectedPath = currentPath.startsWith('/home') || (currentPath.startsWith('/events') && !isPublicEventView);
