@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { COMMON_ID_LOGIN_URL, COMMON_ID_SIGNUP_URL } from '@/lib/auth';
 
 export default function LandingPage() {
   const { user } = useAuth();
@@ -12,13 +13,19 @@ export default function LandingPage() {
       <header className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <span className="font-bold text-gray-900 tracking-tight">イベント管理</span>
         <div className="flex gap-4 items-center">
-          <Link href={user ? homeLink : "/login"} className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
-            {user ? 'ホーム' : 'ログイン'}
-          </Link>
-          {!user && (
-            <Link href="/signup" className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
-              無料で始める
+          {user ? (
+            <Link href={homeLink} className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+              ホーム
             </Link>
+          ) : (
+            <a href={COMMON_ID_LOGIN_URL} className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors">
+              ログイン
+            </a>
+          )}
+          {!user && (
+            <a href={COMMON_ID_SIGNUP_URL} className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+              無料で始める
+            </a>
           )}
         </div>
       </header>
@@ -31,19 +38,24 @@ export default function LandingPage() {
           イベント運営をするためのプラットフォームです。あなたはイベントの告知・集客から、参加者の管理、当日の運営まで、イベントに関するあらゆる業務をスムーズに行うことができます。
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-          <Link
-            href={user ? homeLink : "/signup"}
+          {user ? <Link
+            href={homeLink}
             className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 text-center"
           >
-            {user ? 'ホームへ移動' : '無料でアカウント作成'}
-          </Link>
+            ホームへ移動
+          </Link> : <a
+            href={COMMON_ID_SIGNUP_URL}
+            className="px-8 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 text-center"
+          >
+            無料でアカウント作成
+          </a>}
           {!user && (
-            <Link
-              href="/login"
+            <a
+              href={COMMON_ID_LOGIN_URL}
               className="px-8 py-4 bg-white text-gray-600 border border-gray-100 font-bold rounded-xl hover:bg-gray-50 transition-all text-center"
             >
               ログイン
-            </Link>
+            </a>
           )}
         </div>
       </main>

@@ -9,6 +9,9 @@ services:
       - ./backend:/app
     environment:
       - PORT=8080
+      # Common ID is usually published by Docker Desktop on the host.
+      # localhost inside this container refers to the backend container itself.
+      - COMMON_ID_API_ORIGIN=http://host.docker.internal:18080
 
   frontend:
     build:

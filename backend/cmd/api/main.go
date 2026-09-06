@@ -2,12 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
+	"backend/internal/infrastructure/commonid"
 	"backend/internal/infrastructure/database"
-	"backend/internal/infrastructure/firebase"
+	"backend/internal/infrastructure/session"
 	"backend/internal/infrastructure/web"
 	"backend/internal/interface/handler"
 	"backend/internal/interface/repository"
@@ -20,12 +23,36 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found")
 	}
+	appOrigin, err := requiredEnv("APP_ORIGIN")
+	if err != nil {
+		log.Fatal(err)
+	}
+	appSessionSecret, err := requiredEnv("APP_SESSION_SECRET")
+	if err != nil {
+		log.Fatal(err)
+	}
+	secureCookie, _ := strconv.ParseBool(os.Getenv("APP_SESSION_SECURE"))
+	appSession, err := session.New(appSessionSecret, secureCookie)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	ctx := context.Background()
 
 	// Infrastructure
-	fbClient := firebase.NewClient(ctx)
 	db := database.NewDB()
+	commonID, err := commonid.New(commonid.Config{
+		Origin:            envOrDefault("COMMON_ID_ORIGIN", "http://localhost:13000"),
+		APIOrigin:         envOrDefault("COMMON_ID_API_ORIGIN", "http://localhost:18080"),
+		ClientID:          os.Getenv("COMMON_ID_CLIENT_ID"),
+		RedirectURI:       envOrDefault("COMMON_ID_REDIRECT_URI", "http://localhost:8080/auth/callback"),
+		LogoutRedirectURI: envOrDefault("COMMON_ID_LOGOUT_REDIRECT_URI", "http://localhost:8080/auth/logout/callback"),
+		APIKey:            os.Getenv("COMMON_ID_API_KEY"),
+	})
+	if err != nil {
+		log.Printf("WARNING: Common ID is not configured: %v", err)
+		commonID = nil
+	}
 
 	// Repositories
 	userRepo := repository.NewUserRepository(db)
@@ -33,12 +60,12 @@ func main() {
 
 	// Usecases
 	healthUsecase := usecase.NewHealthUsecase()
-	authUsecase := usecase.NewAuthUsecase(fbClient, userRepo)
+	authUsecase := usecase.NewAuthUsecase(userRepo)
 	eventUsecase := usecase.NewEventUsecase(eventRepo)
 
 	// Handlers
 	healthHandler := handler.NewHealthHandler(healthUsecase)
-	authHandler := handler.NewAuthHandler(authUsecase)
+	authHandler := handler.NewAuthHandler(authUsecase, commonID, appOrigin, appSession)
 	eventHandler := handler.NewEventHandler(eventUsecase)
 
 	// Background Tasks: 終了時刻を過ぎたイベントを自動で finished に更新
@@ -58,7 +85,7 @@ func main() {
 	}
 
 	// Router
-	e := web.NewRouter(healthHandler, authHandler, eventHandler, fbClient)
+	e := web.NewRouter(healthHandler, authHandler, eventHandler, commonID, appOrigin, appSession)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -69,4 +96,19 @@ func main() {
 	if err := e.Start(":" + port); err != nil {
 		log.Fatalf("could not start server: %v", err)
 	}
+}
+
+func envOrDefault(name, fallback string) string {
+	if value := os.Getenv(name); value != "" {
+		return value
+	}
+	return fallback
+}
+
+func requiredEnv(name string) (string, error) {
+	value := os.Getenv(name)
+	if value == "" {
+		return "", fmt.Errorf("%s is required", name)
+	}
+	return value, nil
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { COMMON_ID_LOGIN_URL, COMMON_ID_SIGNUP_URL } from '@/lib/auth';
 
 export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,12 +16,19 @@ export default function Navigation() {
     { name: 'イベント管理', href: '/events' },
   ] : [
     { name: 'ホーム', href: '/' },
-    { name: 'ログイン', href: '/login' },
-    { name: 'アカウント作成', href: '/signup' },
+    { name: 'ログイン', href: COMMON_ID_LOGIN_URL, external: true },
+    { name: 'アカウント作成', href: COMMON_ID_SIGNUP_URL, external: true },
   ];
 
   const NavLink = ({ item, onClick }: { item: any, onClick?: () => void }) => {
     const isActive = pathname === item.href;
+    if (item.external) {
+      return (
+        <a href={item.href} onClick={onClick} className={`block px-4 py-2.5 text-sm font-medium transition-colors rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-50`}>
+          {item.name}
+        </a>
+      );
+    }
     return (
       <Link
         href={item.href}

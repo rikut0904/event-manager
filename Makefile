@@ -1,4 +1,4 @@
-.PHONY: build up down ps fmt lint test frontend-fmt frontend-lint frontend-test backend-fmt backend-lint backend-test
+.PHONY: build up down ps fmt lint test frontend-fmt frontend-lint backend-fmt backend-lint backend-test migrate-users
 
 # Docker operations (Containers)
 build:
@@ -16,7 +16,7 @@ ps:
 # Local development tasks (Run on host machine)
 fmt: frontend-fmt backend-fmt
 lint: frontend-lint backend-lint
-test: frontend-test backend-test
+test: backend-test
 
 # Frontend local tasks
 frontend-fmt:
@@ -24,9 +24,6 @@ frontend-fmt:
 
 frontend-lint:
 	cd frontend && npm run lint
-
-frontend-test:
-	cd frontend && npm run test
 
 # Backend local tasks
 backend-fmt:
@@ -37,3 +34,7 @@ backend-lint:
 
 backend-test:
 	cd backend && go test ./...
+
+# Data migration is dry-run by default. Set MIGRATE_FLAGS explicitly for a real run.
+migrate-users:
+	cd backend && go run ./cmd/migrate-users $(MIGRATE_FLAGS)

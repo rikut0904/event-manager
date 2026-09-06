@@ -63,19 +63,25 @@
 ### 6.1 認証・ユーザー管理
 | Method | Endpoint | Description | 備考 |
 | :--- | :--- | :--- | :--- |
-| POST | `/auth/signup` | メール/パスワードでアカウント作成 | Firebase Authentication にユーザーを作成し、アプリDBにも保存 |
-| POST | `/auth/login` | メール/パスワードでログイン | Firebase Identity Toolkit で ID Token を取得 |
+| GET | `/auth/signup` | Common IDのアカウント作成画面へ遷移 | 認証情報はCommon ID側で管理 |
+| GET | `/auth/login` | Common IDのログイン画面へ遷移 | 認証情報はCommon ID側で管理 |
+| GET | `/auth/callback` | Common ID認証後のコールバック | バックエンドで認可コードを交換し、ユーザー情報を同期 |
+| GET | `/auth/logout` | Common IDのログアウト処理を開始 | Common ID側のセッションを失効 |
+| GET | `/auth/logout/callback` | ログアウト後のコールバック | 検証後にフロントエンドへ戻す |
 | GET | `/api/v1/users/me` | ログインユーザー情報取得 | 自分の基本プロフィール |
 | PATCH | `/api/v1/users/me` | プロフィール/Display ID更新 | ID重複・予約語チェック実施 |
 | GET | `/api/v1/users/me/history` | 自分のイベント参加履歴取得 | 過去のイベント資料へのリンク含む |
 | GET | `/[display_id]` | 公開プロフィール取得 | 【公開】 名刺交換用ページ |
 
 #### ログイン実装メモ
-- フロントエンドは `/login` と `/signup` を表示し、`frontend/src/contexts/AuthContext.tsx` 経由で API を呼び出す。
-- API のベース URL は `NEXT_PUBLIC_API_BASE_URL` で指定する。Docker Compose 開発環境では `http://localhost:8080`。
-- サインアップ時は `POST /auth/signup` のあとに `POST /auth/login` を実行し、取得した `token` と `user` を `localStorage` の `auth_token` / `auth_user` に保存する。
-- 認証が必要な API には `Authorization: Bearer <auth_token>` を付与する。バックエンドの `AuthMiddleware` が Firebase ID Token を検証し、Echo context に `userID` をセットする。
-- バックエンドには `FIREBASE_PROJECT_ID`、`FIREBASE_API_KEY`、`FIREBASE_SERVICE_ACCOUNT_JSON` または `FIREBASE_SERVICE_ACCOUNT_KEY` が必要。
+- フロントエンドにログイン・登録ページは持たず、ボタンからバックエンドの `GET /auth/login` または `GET /auth/signup` へ遷移する。
+- バックエンドはCommon IDへリダイレクトし、認証後に `GET /auth/callback` で認可コードをサーバー間交換する。
+- 認証コールバックでCommon IDの `common_user_id` をアプリDBへ同期し、署名付きHttpOnlyの `app_session` Cookieを発行する。
+- 認証が必要なAPIは `app_session` をローカル検証し、Common IDへの外部HTTP通信を毎回実行しない。Common IDとのセッション確認は認証開始・コールバック時に行う。
+- `APP_SESSION_SECRET` は32文字以上のバックエンド専用秘密値とし、`APP_SESSION_SECURE=true` はHTTPS環境でのみ設定する。
+- 認証後・ログアウト後の画面遷移先は `APP_ORIGIN` で指定する。ローカル開発では `http://localhost:3000` とする。
+- Common ID APIとのサーバー間通信先は `COMMON_ID_API_ORIGIN`、ブラウザ向けCommon ID画面は `COMMON_ID_ORIGIN` で指定する。
+- `COMMON_ID_API_KEY`、認可コード、PKCE verifierなどの秘密情報はバックエンドだけで保持し、ブラウザやログへ出力しない。
 
 ### 6.2 コミュニティ管理
 | Method | Endpoint | Description | 備考 |

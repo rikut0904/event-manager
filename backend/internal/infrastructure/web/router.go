@@ -1,10 +1,10 @@
 package web
 
 import (
-	"os"
 	"strings"
 
-	"backend/internal/infrastructure/firebase"
+	"backend/internal/infrastructure/commonid"
+	"backend/internal/infrastructure/session"
 	"backend/internal/interface/handler"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,17 +14,14 @@ func NewRouter(
 	healthHandler *handler.HealthHandler,
 	authHandler *handler.AuthHandler,
 	eventHandler *handler.EventHandler,
-	fbClient *firebase.Client,
+	commonID *commonid.Client,
+	appOrigin string,
+	appSession *session.Manager,
 ) *echo.Echo {
 	e := echo.New()
 
-	// Get allowed origins from env
-	allowedOriginsStr := os.Getenv("ALLOWED_ORIGINS")
-	allowedOrigins := []string{"http://localhost:3000", "http://127.0.0.1:3000"}
-	if allowedOriginsStr != "" {
-		envOrigins := strings.Split(allowedOriginsStr, ",")
-		allowedOrigins = append(allowedOrigins, envOrigins...)
-	}
+	// The same canonical app origin is used for the frontend redirect and CORS.
+	allowedOrigins := []string{normalizeOrigin(appOrigin)}
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
@@ -36,18 +33,21 @@ func NewRouter(
 	}))
 
 	e.GET("/health", healthHandler.HealthCheck)
-	e.POST("/auth/signup", authHandler.SignUp)
-	e.POST("/auth/login", authHandler.Login)
-	e.POST("/auth/link-connpass", authHandler.LinkConnpass, AuthMiddleware(fbClient))
+	e.GET("/auth/callback", authHandler.Callback)
+	e.GET("/auth/logout", authHandler.BeginLogout)
+	e.GET("/auth/logout/callback", authHandler.LogoutCallback)
+	e.GET("/auth/:intent", authHandler.Begin)
+	e.POST("/auth/link-connpass", authHandler.LinkConnpass, AuthMiddleware(appSession))
 
 	// 公開閲覧用
 	e.GET("/api/v1/events/published", eventHandler.GetPublished)
-	e.GET("/api/v1/events/view/:id", eventHandler.GetByID, OptionalAuthMiddleware(fbClient))
+	e.GET("/api/v1/events/view/:id", eventHandler.GetByID, OptionalAuthMiddleware(appSession))
 	e.GET("/api/v1/events/public/:display_id", eventHandler.GetPublicByDisplayID)
 
 	// Protected routes
 	r := e.Group("/api/v1")
-	r.Use(AuthMiddleware(fbClient))
+	r.Use(AuthMiddleware(appSession))
+	r.GET("/users/me", authHandler.CurrentUser)
 
 	// Event routes
 	r.POST("/events", eventHandler.Create)
@@ -57,4 +57,8 @@ func NewRouter(
 	r.GET("/events/:id", eventHandler.GetByID)
 
 	return e
+}
+
+func normalizeOrigin(origin string) string {
+	return strings.TrimRight(strings.TrimSpace(origin), "/")
 }

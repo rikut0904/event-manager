@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const pathname = usePathname();
   const currentPath = pathname || '';
   // サイドバーを表示しないページの判定
-  const noSidebarPaths = ['/', '/login', '/signup'];
+  const noSidebarPaths = ['/'];
   const shouldShowSidebar = !noSidebarPaths.includes(currentPath);
 
   return (

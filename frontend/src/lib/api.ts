@@ -7,16 +7,14 @@ if (!API_BASE_URL && typeof window !== 'undefined') {
 const BASE_URL = API_BASE_URL || 'http://localhost:8080';
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
-  
   const headers = {
     'Content-Type': 'application/json',
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...options.headers,
   };
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
+    credentials: 'include',
     headers,
   });
 

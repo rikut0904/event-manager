@@ -2,45 +2,42 @@ package web
 
 import (
 	"net/http"
-	"strings"
 
-	"backend/internal/infrastructure/firebase"
+	"backend/internal/infrastructure/session"
 	"github.com/labstack/echo/v4"
 )
 
-func AuthMiddleware(fbClient *firebase.Client) echo.MiddlewareFunc {
+func AuthMiddleware(appSession *session.Manager) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			authHeader := c.Request().Header.Get("Authorization")
-			if authHeader == "" {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Authorization header is required")
+			if appSession == nil {
+				return echo.NewHTTPError(http.StatusServiceUnavailable, "アプリセッションが設定されていません")
 			}
-
-			idToken := strings.Replace(authHeader, "Bearer ", "", 1)
-			token, err := fbClient.Auth.VerifyIDToken(c.Request().Context(), idToken)
+			cookie, err := c.Cookie(session.CookieName)
 			if err != nil {
-				return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token")
+				return echo.NewHTTPError(http.StatusUnauthorized, "ログインが必要です")
 			}
-
-			// ContextにuserIDをセット
-			c.Set("userID", token.UID)
+			userID, err := appSession.Verify(cookie.Value)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, "ログインセッションが無効です")
+			}
+			c.Set("userID", userID)
 			return next(c)
 		}
 	}
 }
 
-func OptionalAuthMiddleware(fbClient *firebase.Client) echo.MiddlewareFunc {
+func OptionalAuthMiddleware(appSession *session.Manager) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			authHeader := c.Request().Header.Get("Authorization")
-			if authHeader == "" {
+			if appSession == nil {
 				return next(c)
 			}
-
-			idToken := strings.Replace(authHeader, "Bearer ", "", 1)
-			token, err := fbClient.Auth.VerifyIDToken(c.Request().Context(), idToken)
+			cookie, err := c.Cookie(session.CookieName)
 			if err == nil {
-				c.Set("userID", token.UID)
+				if userID, verifyErr := appSession.Verify(cookie.Value); verifyErr == nil {
+					c.Set("userID", userID)
+				}
 			}
 			return next(c)
 		}
