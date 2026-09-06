@@ -2,6 +2,26 @@
 
 既存のFirebase UIDをCommon IDのユーザーIDへ置き換え、イベントの作成者参照も同時に更新するためのコマンドです。
 
+## GitHub Actionsから実行する場合
+
+`.github/workflows/migrate-users.yml`の`workflow_dispatch`から手動実行できます。
+
+GitHubリポジトリのSettings > Environments > productionを作成し、Environment secrets / variablesとして次を登録してください。production Environmentに承認者を設定すると、本番移行前に承認を必須にできます。
+
+Secrets:
+
+- `PRODUCTION_DATABASE_URL`: 本番PostgreSQLの接続URL
+- `COMMON_ID_CLIENT_ID`: Common IDのClient ID
+- `COMMON_ID_API_KEY`: Common IDアプリケーションのAPIキー
+- `FIREBASE_SERVICE_ACCOUNT_JSON`: Firebase Admin SDKのサービスアカウントJSON
+
+Variables:
+
+- `COMMON_ID_API_ORIGIN`: GitHub Actions runnerから到達できるCommon ID APIのHTTPS URL
+- `FIREBASE_PROJECT_ID`: FirebaseプロジェクトID
+
+安全のため、入力の初期値は`dry_run=true`、`update_db=false`です。結果を確認した後、`dry_run=false`と`update_db=true`を明示して本番DBを更新してください。未検証メールを許可する場合だけ`allow_unverified=true`を指定します。
+
 ## 事前準備
 
 Common ID側でこのアプリの `client_id` とAPIキーを発行し、次の環境変数を設定します。
