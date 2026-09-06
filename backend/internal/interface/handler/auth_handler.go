@@ -84,7 +84,7 @@ func (h *AuthHandler) AuthCallback(c echo.Context) error {
 func (h *AuthHandler) BeginLogout(c echo.Context) error {
 	c.SetCookie(h.appSession.ClearCookie())
 	if h.commonID == nil {
-		return c.Redirect(http.StatusFound, "/")
+		return c.Redirect(http.StatusFound, h.frontendRedirect("/"))
 	}
 	logoutURL, state, err := h.commonID.BeginLogout()
 	if err != nil {
