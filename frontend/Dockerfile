@@ -7,11 +7,10 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# キャッシュを無効化して確実に再インストールするため package-lock.json をコピーしない
-COPY package.json ./
+# package-lock.jsonを使って依存関係を固定し、Linuxコンテナ用のoptional native依存もインストールする
+COPY package.json package-lock.json ./
 
-# 実行環境(Linux arm64)向けのバイナリを強制的にインストール
-RUN npm install
+RUN npm ci --include=optional
 
 COPY . .
 

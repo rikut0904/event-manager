@@ -1,10 +1,10 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 	"time"
 
 	"backend/internal/infrastructure/commonid"
@@ -18,14 +18,10 @@ type AuthHandler struct {
 	commonID    *commonid.Client
 	appSession  *session.Manager
 	frontendURL string
-	pendingMu   sync.Mutex
-	pending     map[string]commonid.Pending
-	backPaths   map[string]string
-	logoutState map[string]time.Time
 }
 
 func NewAuthHandler(u usecase.AuthUsecase, commonIDClient *commonid.Client, frontendOrigin string, appSession *session.Manager) *AuthHandler {
-	return &AuthHandler{authUsecase: u, commonID: commonIDClient, appSession: appSession, frontendURL: strings.TrimRight(frontendOrigin, "/"), pending: make(map[string]commonid.Pending), backPaths: make(map[string]string), logoutState: make(map[string]time.Time)}
+	return &AuthHandler{authUsecase: u, commonID: commonIDClient, appSession: appSession, frontendURL: strings.TrimRight(frontendOrigin, "/")}
 }
 
 func (h *AuthHandler) Begin(c echo.Context) error {
@@ -37,11 +33,18 @@ func (h *AuthHandler) Begin(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	h.pendingMu.Lock()
-	h.cleanupExpiredStatesLocked(time.Now().UTC())
-	h.pending[pending.State] = pending
-	h.backPaths[pending.State] = safeBackPath(c.QueryParam("back_path"))
-	h.pendingMu.Unlock()
+	pendingCookie, err := h.appSession.IssueOAuthPending(session.OAuthPending{
+		State:       pending.State,
+		Verifier:    pending.Verifier,
+		ClientID:    pending.ClientID,
+		RedirectURI: pending.RedirectURI,
+		BackPath:    safeBackPath(c.QueryParam("back_path")),
+		ExpiresAt:   pending.ExpiresAt.Unix(),
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "認証状態を保存できません")
+	}
+	c.SetCookie(pendingCookie)
 	return c.Redirect(http.StatusFound, authURL)
 }
 
@@ -49,19 +52,20 @@ func (h *AuthHandler) Callback(c echo.Context) error {
 	if h.commonID == nil {
 		return echo.NewHTTPError(http.StatusServiceUnavailable, "Common IDが設定されていません")
 	}
-	state := c.QueryParam("state")
-	h.pendingMu.Lock()
-	pending, ok := h.pending[state]
-	delete(h.pending, state)
-	backPath := h.backPaths[state]
-	delete(h.backPaths, state)
-	h.pendingMu.Unlock()
-	if !ok {
+	pendingCookie, err := c.Cookie(session.OAuthPendingCookieName)
+	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "認証状態が見つかりません。もう一度お試しください")
 	}
+	pendingData, err := h.appSession.VerifyOAuthPending(pendingCookie.Value)
+	c.SetCookie(h.appSession.ClearOAuthPendingCookie())
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "認証状態の有効期限が切れています。もう一度お試しください")
+	}
+	pending := commonid.Pending{State: pendingData.State, Verifier: pendingData.Verifier, ClientID: pendingData.ClientID, RedirectURI: pendingData.RedirectURI, ExpiresAt: time.Unix(pendingData.ExpiresAt, 0)}
 	commonUser, err := h.commonID.Exchange(c.Request().Context(), c.QueryParams(), pending)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
+		log.Printf("Common ID token exchange failed: %v", err)
+		return echo.NewHTTPError(http.StatusUnauthorized, "Common IDとの認証に失敗しました")
 	}
 	if _, err := h.authUsecase.SyncCommonUser(c.Request().Context(), commonUser.CommonUserID, commonUser.Email); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "ユーザー情報を保存できませんでした")
@@ -71,6 +75,7 @@ func (h *AuthHandler) Callback(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "アプリセッションを発行できませんでした")
 	}
 	c.SetCookie(appCookie)
+	backPath := pendingData.BackPath
 	if backPath == "" {
 		backPath = "/home"
 	}
@@ -90,35 +95,23 @@ func (h *AuthHandler) BeginLogout(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "ログアウトを開始できません")
 	}
-	h.pendingMu.Lock()
-	h.cleanupExpiredStatesLocked(time.Now().UTC())
-	h.logoutState[state] = time.Now().UTC().Add(10 * time.Minute)
-	h.pendingMu.Unlock()
+	logoutCookie, err := h.appSession.IssueOAuthLogoutState(state, time.Now().UTC().Add(10*time.Minute))
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "ログアウト状態を保存できません")
+	}
+	c.SetCookie(logoutCookie)
 	return c.Redirect(http.StatusFound, logoutURL)
-}
-
-func (h *AuthHandler) cleanupExpiredStatesLocked(now time.Time) {
-	for state, pending := range h.pending {
-		if now.After(pending.ExpiresAt) {
-			delete(h.pending, state)
-			delete(h.backPaths, state)
-		}
-	}
-	for state, expiresAt := range h.logoutState {
-		if now.After(expiresAt) {
-			delete(h.logoutState, state)
-		}
-	}
 }
 
 func (h *AuthHandler) LogoutCallback(c echo.Context) error {
 	c.SetCookie(h.appSession.ClearCookie())
-	state := c.QueryParam("state")
-	h.pendingMu.Lock()
-	expiresAt, ok := h.logoutState[state]
-	delete(h.logoutState, state)
-	h.pendingMu.Unlock()
-	if !ok || time.Now().After(expiresAt) || (c.QueryParam("logout") != "success" && c.QueryParam("result") != "success") {
+	logoutCookie, err := c.Cookie(session.OAuthLogoutStateCookieName)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "ログアウトを確認できません")
+	}
+	expected, err := h.appSession.VerifyOAuthLogoutState(logoutCookie.Value)
+	c.SetCookie(h.appSession.ClearOAuthLogoutStateCookie())
+	if err != nil || c.QueryParam("state") != expected.State || (c.QueryParam("logout") != "success" && c.QueryParam("result") != "success") {
 		return echo.NewHTTPError(http.StatusBadRequest, "ログアウトを確認できません")
 	}
 	return c.Redirect(http.StatusFound, h.frontendRedirect("/"))

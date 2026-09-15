@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -108,8 +107,18 @@ func (c *Client) Exchange(ctx context.Context, callback url.Values, pending Pend
 	}
 	defer res.Body.Close()
 	if res.StatusCode != http.StatusOK {
-		io.Copy(io.Discard, res.Body)
-		return User{}, ErrInvalidCallback
+		var apiError struct {
+			Error            string `json:"error"`
+			ErrorDescription string `json:"error_description"`
+		}
+		_ = json.NewDecoder(res.Body).Decode(&apiError)
+		if apiError.Error == "" {
+			apiError.Error = "unknown_error"
+		}
+		if apiError.ErrorDescription != "" {
+			return User{}, fmt.Errorf("%w: token endpoint returned status=%d error=%s description=%s", ErrInvalidCallback, res.StatusCode, apiError.Error, apiError.ErrorDescription)
+		}
+		return User{}, fmt.Errorf("%w: token endpoint returned status=%d error=%s", ErrInvalidCallback, res.StatusCode, apiError.Error)
 	}
 	var user User
 	if err := json.NewDecoder(res.Body).Decode(&user); err != nil {
